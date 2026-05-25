@@ -45,6 +45,7 @@ class SettingsMap:
     @staticmethod
     def to_studio(scene: Any) -> SceneObject:
         """Build the Maxwell Settings ``Empty`` object from a ``maxwell.Scene``."""
+        from ..components.result import MaxwellResultComponent
         from ..components.settings import (
             MaxwellBoundaryComponent,
             MaxwellDomainComponent,
@@ -57,6 +58,7 @@ class SettingsMap:
         SettingsMap._read_grid(obj.add_component(MaxwellGridComponent()), scene.grid)
         SettingsMap._read_boundary(obj.add_component(MaxwellBoundaryComponent()), scene.boundary)
         SettingsMap._read_solve(obj.add_component(MaxwellSolveSettingsComponent()), scene)
+        obj.add_component(MaxwellResultComponent())  # solve button + field viz (no round-trip data)
         return obj
 
     @staticmethod

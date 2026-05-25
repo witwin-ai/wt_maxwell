@@ -10,3 +10,4 @@ from . import materials  # noqa: F401
 from . import sources  # noqa: F401
 from . import monitors  # noqa: F401
 from . import ports  # noqa: F401
+from . import result  # noqa: F401
