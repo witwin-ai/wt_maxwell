@@ -46,6 +46,57 @@ def assert_material_scalar_equal(m1: Any, m2: Any) -> None:
     assert (m1.name or None) == (m2.name or None), "material name"
 
 
+def _poles_equal(p1: Any, p2: Any, attrs: tuple) -> None:
+    p1, p2 = tuple(p1), tuple(p2)
+    assert len(p1) == len(p2), f"pole count {len(p1)} != {len(p2)}"
+    for a, b in zip(p1, p2):
+        for attr in attrs:
+            assert approx(getattr(a, attr), getattr(b, attr)), f"pole {attr}"
+
+
+def _tensor_equal(t1: Any, t2: Any) -> None:
+    if t1 is None and t2 is None:
+        return
+    assert t1 is not None and t2 is not None, "tensor None mismatch"
+    assert all(approx(x, y) for x, y in zip(t1.as_tuple(), t2.as_tuple())), "tensor values"
+
+
+def assert_material_full_equal(m1: Any, m2: Any) -> None:
+    """Assert two maxwell materials match across the full superset + capability flags."""
+    assert_material_scalar_equal(m1, m2)
+    assert bool(m1.is_dispersive) == bool(m2.is_dispersive), "is_dispersive"
+    assert bool(m1.is_anisotropic) == bool(m2.is_anisotropic), "is_anisotropic"
+    assert bool(m1.is_nonlinear) == bool(m2.is_nonlinear), "is_nonlinear"
+    _poles_equal(m1.debye_poles, m2.debye_poles, ("delta_eps", "tau"))
+    _poles_equal(m1.drude_poles, m2.drude_poles, ("plasma_frequency", "gamma"))
+    _poles_equal(m1.lorentz_poles, m2.lorentz_poles, ("delta_eps", "resonance_frequency", "gamma"))
+    _poles_equal(m1.mu_debye_poles, m2.mu_debye_poles, ("delta_eps", "tau"))
+    _poles_equal(m1.mu_drude_poles, m2.mu_drude_poles, ("plasma_frequency", "gamma"))
+    _poles_equal(m1.mu_lorentz_poles, m2.mu_lorentz_poles, ("delta_eps", "resonance_frequency", "gamma"))
+    _tensor_equal(m1.epsilon_tensor, m2.epsilon_tensor)
+    _tensor_equal(m1.mu_tensor, m2.mu_tensor)
+    _tensor_equal(m1.sigma_e_tensor, m2.sigma_e_tensor)
+    assert approx(m1.kerr_chi3 or 0.0, m2.kerr_chi3 or 0.0), "kerr_chi3"
+
+
+def assert_region_equal(r1: Any, r2: Any) -> None:
+    """Assert two MaterialRegions match (name/basis/bounds/filter/projection/shape/geometry)."""
+    assert (r1.name or "") == (r2.name or ""), "region name"
+    assert str(r1.basis) == str(r2.basis), "basis"
+    assert all(approx(a, b) for a, b in zip(r1.bounds, r2.bounds)), "bounds"
+    assert all(approx(a, b) for a, b in zip(r1.eps_bounds, r2.eps_bounds)), "eps_bounds"
+    assert all(approx(a, b) for a, b in zip(r1.mu_bounds, r2.mu_bounds)), "mu_bounds"
+    assert tuple(r1.density.shape) == tuple(r2.density.shape), "density shape"
+    f1 = None if r1.filter_radius is None else float(r1.filter_radius)
+    f2 = None if r2.filter_radius is None else float(r2.filter_radius)
+    assert (f1 is None) == (f2 is None) and (f1 is None or approx(f1, f2)), "filter_radius"
+    p1 = None if r1.projection_beta is None else float(r1.projection_beta)
+    p2 = None if r2.projection_beta is None else float(r2.projection_beta)
+    assert (p1 is None) == (p2 is None) and (p1 is None or approx(p1, p2)), "projection_beta"
+    assert (r1.symmetry or None) == (r2.symmetry or None), "region symmetry"
+    assert_geometry_equal(r1.geometry, r2.geometry)
+
+
 def assert_structures_equal(list1: Any, list2: Any) -> None:
     """Assert two structure lists match element-wise (geometry + material + meta)."""
     s1, s2 = list(list1), list(list2)

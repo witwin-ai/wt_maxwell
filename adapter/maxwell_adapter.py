@@ -49,7 +49,13 @@ class MaxwellAdapter:
         studio.begin_batch()
         studio.add_object(SettingsMap.to_studio(scene))
         for structure in scene.structures:
-            studio.add_object(StructureMap.to_studio(structure))
+            obj = StructureMap.to_studio(structure)
+            em = obj.get_component("EMMaterial")
+            if em is not None:
+                MaterialAdapter.overlay_studio(em, structure.material)
+            studio.add_object(obj)
+        for region in scene.material_regions:
+            studio.add_object(MaterialAdapter.region_to_studio(region))
         studio.end_batch()
         return studio
 
@@ -76,7 +82,9 @@ class MaxwellAdapter:
         for obj in studio_scene.objects.values():
             if obj is settings_obj:
                 continue
-            if obj.get_component("PlatformGeometry") is not None:
+            if obj.get_component("MaterialRegion") is not None:
+                scene.add_material_region(MaterialAdapter.region_to_platform(obj))
+            elif obj.get_component("PlatformGeometry") is not None:
                 scene.add_structure(self._structure_to_platform(mw, obj))
         return scene
 

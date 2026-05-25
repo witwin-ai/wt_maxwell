@@ -42,3 +42,9 @@ def wtm():
 def adapter(wtm):
     """A fresh :class:`MaxwellAdapter` instance."""
     return importlib.import_module(f"{PKG}.adapter.maxwell_adapter").MaxwellAdapter()
+
+
+@pytest.fixture(scope="session")
+def mat_adapter(wtm):
+    """The :class:`MaterialAdapter` class (for direct material round-trip / guards)."""
+    return importlib.import_module(f"{PKG}.adapter.material_adapter").MaterialAdapter
