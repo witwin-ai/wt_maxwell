@@ -43,14 +43,23 @@ wt-maxwell/
 
 ## Running the tests
 
-The round-trip suites need the studio backend with the frozen base layer
-(`witwin_server` + `witwin_server.platform_bridge`) and the maxwell solver
-(`witwin.core` / `witwin.maxwell`) on `PYTHONPATH`. They run on CPU (no GPU
-needed except the M4 live-solve suite, which requires CUDA). Use a Python
-environment with `torch`, `drjit>=1.0`, `scipy`, `trimesh`, and `pytest`:
+The round-trip suites run against the **installed** environment — the same
+packages the running server uses. Install the studio backend (with the frozen
+`platform_bridge`) and the maxwell solver editable, in an env that also has
+`torch`, `drjit>=1.0`, `scipy`, `trimesh`, and `pytest`:
 
 ```bash
-# from plugins/wt-maxwell
-PYTHONPATH="<studio>/server;<platform>/core;<platform>/maxwell" \
-  python -m pytest tests
+pip install -e <studio>/server --no-deps        # witwin_server (+ platform_bridge)
+pip install -e <platform>/maxwell --no-deps      # witwin.maxwell (needs witwin.core)
 ```
+
+Then just run pytest — no `PYTHONPATH` needed (conftest adds only the plugins
+directory so `import wt_maxwell` resolves):
+
+```bash
+# from plugins/wt_maxwell
+python -m pytest tests
+```
+
+They run on CPU except the M4 live-solve suite, which uses CUDA when available and
+skips if no working solver is present.

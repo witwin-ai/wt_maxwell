@@ -1,10 +1,12 @@
-"""Pytest harness for the wt-maxwell round-trip suite.
+"""Pytest harness for the wt_maxwell round-trip suite.
 
-The suite needs three things importable: the studio backend with the frozen base
-layer (``witwin_server`` + ``witwin_server.platform_bridge``), the maxwell solver
-package (``witwin.maxwell`` / ``witwin.core``), and this plugin package. The first
-two come from PYTHONPATH (set by the runner); this conftest only adds the plugins
-directory so ``importlib.import_module("wt_maxwell")`` resolves. If the base/solver
+Runs against the real environment: ``witwin_server`` (with the frozen
+``platform_bridge``) and the maxwell solver (``witwin.maxwell`` / ``witwin.core``)
+must be installed — e.g. ``pip install -e server`` and ``pip install -e
+<platform>/maxwell`` (the same packages the running server uses), so no PYTHONPATH
+is needed. This conftest only adds the plugins directory so
+``importlib.import_module("wt_maxwell")`` resolves (the plugin itself is not
+pip-installed; the server adds the same directory at startup). If the base/solver
 deps are not importable, the whole suite is skipped rather than erroring.
 """
 import importlib
