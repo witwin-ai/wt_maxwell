@@ -7,3 +7,4 @@ configuration, region, source, monitor, port, and result components.
 """
 from . import settings  # noqa: F401
 from . import materials  # noqa: F401
+from . import sources  # noqa: F401

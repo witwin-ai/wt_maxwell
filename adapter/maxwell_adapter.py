@@ -16,6 +16,7 @@ from witwin_server.platform_bridge import GeometryMap, StructureMap, TransformMa
 
 from .material_adapter import MaterialAdapter
 from .settings_map import MARKER_COMPONENT, SettingsMap
+from .source_map import SOURCE_COMPONENTS, SourceMap
 
 
 def _num(value: Any) -> float:
@@ -54,6 +55,8 @@ class MaxwellAdapter:
             if em is not None:
                 MaterialAdapter.overlay_studio(em, structure.material)
             studio.add_object(obj)
+        for source in scene.sources:
+            studio.add_object(SourceMap.to_studio(source))
         for region in scene.material_regions:
             studio.add_object(MaterialAdapter.region_to_studio(region))
         studio.end_batch()
@@ -84,9 +87,16 @@ class MaxwellAdapter:
                 continue
             if obj.get_component("MaterialRegion") is not None:
                 scene.add_material_region(MaterialAdapter.region_to_platform(obj))
+            elif self._has_any(obj, SOURCE_COMPONENTS):
+                scene.add_source(SourceMap.to_platform(obj))
             elif obj.get_component("PlatformGeometry") is not None:
                 scene.add_structure(self._structure_to_platform(mw, obj))
         return scene
+
+    @staticmethod
+    def _has_any(obj: SceneObject, names: tuple) -> bool:
+        # True if the object carries any of the named components.
+        return any(obj.get_component(name) is not None for name in names)
 
     @staticmethod
     def _find_settings(studio_scene: Scene) -> Optional[SceneObject]:

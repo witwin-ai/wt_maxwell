@@ -113,6 +113,67 @@ def assert_structures_equal(list1: Any, list2: Any) -> None:
         assert tuple(a.tags) == tuple(b.tags), f"{name} tags"
 
 
+def _vecs_equal(a: Any, b: Any) -> bool:
+    return len(tuple(a)) == len(tuple(b)) and all(approx(x, y) for x, y in zip(a, b))
+
+
+def assert_source_time_equal(t1: Any, t2: Any) -> None:
+    """Assert two temporal profiles (or None) match."""
+    if t1 is None and t2 is None:
+        return
+    assert t1 is not None and t2 is not None, "source_time None mismatch"
+    assert str(t1.kind) == str(t2.kind), "source_time kind"
+    assert approx(t1.frequency, t2.frequency), "source_time frequency"
+    assert approx(t1.amplitude, t2.amplitude), "source_time amplitude"
+    assert approx(t1.delay, t2.delay), "source_time delay"
+    assert approx(getattr(t1, "phase", 0.0), getattr(t2, "phase", 0.0)), "source_time phase"
+    assert approx(getattr(t1, "fwidth", 0.0), getattr(t2, "fwidth", 0.0)), "source_time fwidth"
+
+
+def _injection_equal(i1: Any, i2: Any) -> None:
+    t1, t2 = hasattr(i1, "bounds"), hasattr(i2, "bounds")
+    assert t1 == t2, "injection kind (soft/tfsf) mismatch"
+    if t1:
+        for ax in range(3):
+            assert approx(i1.bounds[ax][0], i2.bounds[ax][0]) and approx(i1.bounds[ax][1], i2.bounds[ax][1]), \
+                "tfsf bounds"
+
+
+def assert_source_equal(s1: Any, s2: Any) -> None:
+    """Assert two maxwell sources match (dispatch by kind), incl. their temporal profile."""
+    assert str(s1.kind) == str(s2.kind), f"source kind {s1.kind} != {s2.kind}"
+    assert_source_time_equal(s1.source_time, s2.source_time)
+    kind = str(s1.kind)
+    if kind == "point_dipole":
+        assert _vecs_equal(s1.position, s2.position), "dipole position"
+        assert _vecs_equal(s1.polarization, s2.polarization), "dipole polarization"
+        assert approx(s1.width, s2.width), "dipole width"
+        assert str(s1.profile) == str(s2.profile), "dipole profile"
+    elif kind in ("plane_wave", "gaussian_beam"):
+        assert _vecs_equal(s1.direction, s2.direction), "direction"
+        assert _vecs_equal(s1.polarization, s2.polarization), "polarization"
+        _injection_equal(s1.injection, s2.injection)
+        assert (s1.injection_axis or None) == (s2.injection_axis or None), "injection_axis"
+        if kind == "gaussian_beam":
+            assert approx(s1.beam_waist, s2.beam_waist), "beam_waist"
+            assert _vecs_equal(s1.focus, s2.focus), "focus"
+    elif kind == "mode_source":
+        assert _vecs_equal(s1.position, s2.position), "mode position"
+        assert _vecs_equal(s1.size, s2.size), "mode size"
+        assert int(s1.mode_index) == int(s2.mode_index), "mode_index"
+        assert str(s1.direction) == str(s2.direction), "mode direction"
+        assert str(s1.polarization_axis) == str(s2.polarization_axis), "polarization_axis"
+
+
+def assert_sources_equal(list1: Any, list2: Any) -> None:
+    """Assert two source lists match by name."""
+    by1 = {s.name: s for s in list1}
+    by2 = {s.name: s for s in list2}
+    assert by1.keys() == by2.keys(), f"source names {by1.keys()} != {by2.keys()}"
+    for name, a in by1.items():
+        assert_source_equal(a, by2[name])
+
+
 def assert_config_equal(s1: Any, s2: Any) -> None:
     """Assert two scenes share domain / grid / boundary / subpixel / symmetry / device."""
     for i in range(3):
