@@ -5,47 +5,30 @@ component; position-bearing sources also use the object's ``Transform``. The
 nested temporal profile (``st_*`` fields) is handled once by :class:`SourceTimeMap`
 and shared by every source (and by ``ModePort`` in M3).
 """
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from witwin_server import SceneObject
 
+from .common import axis_field as _axis_from_letter
+from .common import axis_name as _axis_name
+from .common import num as _f
+from .common import vec as _vec
+
 # Studio component name per maxwell source ``kind``.
 SOURCE_COMPONENTS = ("PointDipoleSource", "PlaneWaveSource", "GaussianBeamSource", "ModeSource")
-_AXIS_VECTORS = {"Ex": (1.0, 0.0, 0.0), "Ey": (0.0, 1.0, 0.0), "Ez": (0.0, 0.0, 1.0)}
-_TOL = 1e-6
-
-
-def _vec(value: Any) -> List[float]:
-    seq = value.tolist() if hasattr(value, "tolist") else value
-    return [float(v) for v in seq]
-
-
-def _f(value: Any) -> float:
-    if hasattr(value, "item"):
-        return float(value.item())
-    return float(value)
-
-
-def _axis_name(vec: Tuple[float, float, float]) -> Optional[str]:
-    # "Ex"/"Ey"/"Ez" if vec is an axis unit vector, else None.
-    for name, axis in _AXIS_VECTORS.items():
-        if all(abs(a - b) <= _TOL for a, b in zip(vec, axis)):
-            return name
-    return None
-
-
-def _axis_from_letter(letter: str) -> str:
-    # "x"/"y"/"z" -> "Ex"/"Ey"/"Ez".
-    return {"x": "Ex", "y": "Ey", "z": "Ez"}.get(str(letter), "auto")
 
 
 class SourceTimeMap:
     """Nested ``st_*`` fields <-> ``maxwell`` temporal profile (CW/GaussianPulse/Ricker)."""
 
     @staticmethod
-    def to_platform(comp: Any) -> Optional[Any]:
-        """Build a ``SourceTime`` from a source component's ``st_*`` fields (or None)."""
-        if not bool(comp.st_enabled):
+    def to_platform(comp: Any, enabled: bool) -> Optional[Any]:
+        """Build a ``SourceTime`` from a component's ``st_*`` fields (None if not enabled).
+
+        ``enabled`` is passed explicitly so the gate field can be ``st_enabled``
+        (sources) or ``is_source`` (ports).
+        """
+        if not enabled:
             return None
         import witwin.maxwell as mw
 
@@ -60,12 +43,13 @@ class SourceTimeMap:
         return mw.RickerWavelet(frequency=frequency, amplitude=amplitude, delay=delay)
 
     @staticmethod
-    def to_studio(comp: Any, source_time: Any) -> None:
-        """Write a ``SourceTime`` (or None) onto a source component's ``st_*`` fields."""
+    def to_studio(comp: Any, source_time: Any) -> bool:
+        """Write a ``SourceTime`` (or None) onto a component's ``st_*`` fields.
+
+        Returns whether a profile was present so the caller can set its gate field.
+        """
         if source_time is None:
-            comp.st_enabled = False
-            return
-        comp.st_enabled = True
+            return False
         comp.st_frequency = float(source_time.frequency)
         comp.st_amplitude = float(source_time.amplitude)
         kind = str(source_time.kind)
@@ -82,6 +66,7 @@ class SourceTimeMap:
             comp.st_kind = "ricker"
             comp.st_auto_delay = False
             comp.st_delay = float(source_time.delay)
+        return True
 
 
 class SourceMap:
@@ -134,7 +119,7 @@ class SourceMap:
         comp.polarization = list(source.polarization)
         comp.width = float(source.width)
         comp.profile = str(source.profile)
-        SourceTimeMap.to_studio(comp, source.source_time)
+        comp.st_enabled = SourceTimeMap.to_studio(comp, source.source_time)
 
     @staticmethod
     def _dipole_to_platform(mw: Any, obj: SceneObject) -> Any:
@@ -144,7 +129,7 @@ class SourceMap:
         return mw.PointDipole(
             position=tuple(_vec(obj.get_component("Transform").position)),
             polarization=polarization, width=_f(comp.width), profile=str(comp.profile),
-            source_time=SourceTimeMap.to_platform(comp), name=obj.name)
+            source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)), name=obj.name)
 
     # --- PlaneWave / GaussianBeam (shared injection handling) ----------------
 
@@ -153,14 +138,14 @@ class SourceMap:
         comp.direction = list(source.direction)
         comp.polarization = list(source.polarization)
         SourceMap._read_injection(comp, source)
-        SourceTimeMap.to_studio(comp, source.source_time)
+        comp.st_enabled = SourceTimeMap.to_studio(comp, source.source_time)
 
     @staticmethod
     def _plane_to_platform(mw: Any, obj: SceneObject) -> Any:
         comp = obj.get_component("PlaneWaveSource")
         return mw.PlaneWave(
             direction=tuple(_vec(comp.direction)), polarization=tuple(_vec(comp.polarization)),
-            source_time=SourceTimeMap.to_platform(comp),
+            source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)),
             injection=SourceMap._build_injection(mw, comp),
             injection_axis=SourceMap._injection_axis(comp), name=obj.name)
 
@@ -171,7 +156,7 @@ class SourceMap:
         comp.beam_waist = float(source.beam_waist)
         comp.focus = list(source.focus)
         SourceMap._read_injection(comp, source)
-        SourceTimeMap.to_studio(comp, source.source_time)
+        comp.st_enabled = SourceTimeMap.to_studio(comp, source.source_time)
 
     @staticmethod
     def _beam_to_platform(mw: Any, obj: SceneObject) -> Any:
@@ -179,7 +164,7 @@ class SourceMap:
         return mw.GaussianBeam(
             direction=tuple(_vec(comp.direction)), polarization=tuple(_vec(comp.polarization)),
             beam_waist=_f(comp.beam_waist), focus=tuple(_vec(comp.focus)),
-            source_time=SourceTimeMap.to_platform(comp),
+            source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)),
             injection=SourceMap._build_injection(mw, comp),
             injection_axis=SourceMap._injection_axis(comp), name=obj.name)
 
@@ -217,7 +202,7 @@ class SourceMap:
         comp.mode_index = int(source.mode_index)
         comp.direction = str(source.direction)
         comp.polarization = _axis_from_letter(source.polarization_axis)
-        SourceTimeMap.to_studio(comp, source.source_time)
+        comp.st_enabled = SourceTimeMap.to_studio(comp, source.source_time)
 
     @staticmethod
     def _mode_to_platform(mw: Any, obj: SceneObject) -> Any:
@@ -226,4 +211,4 @@ class SourceMap:
             position=tuple(_vec(obj.get_component("Transform").position)),
             size=tuple(_vec(comp.size)), mode_index=int(comp.mode_index),
             direction=str(comp.direction), polarization=str(comp.polarization),
-            source_time=SourceTimeMap.to_platform(comp), name=obj.name)
+            source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)), name=obj.name)

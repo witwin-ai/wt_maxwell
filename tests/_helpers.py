@@ -174,6 +174,70 @@ def assert_sources_equal(list1: Any, list2: Any) -> None:
         assert_source_equal(a, by2[name])
 
 
+def _freqs_equal(f1: Any, f2: Any) -> None:
+    if f1 is None and f2 is None:
+        return
+    assert f1 is not None and f2 is not None, "frequencies None mismatch"
+    assert len(tuple(f1)) == len(tuple(f2)) and all(approx(a, b) for a, b in zip(f1, f2)), "frequencies"
+
+
+def assert_monitor_equal(m1: Any, m2: Any) -> None:
+    """Assert two maxwell monitors match (dispatch by kind)."""
+    assert str(m1.kind) == str(m2.kind), f"monitor kind {m1.kind} != {m2.kind}"
+    kind = str(m1.kind)
+    if kind == "point":
+        assert _vecs_equal(m1.position, m2.position), "point position"
+        assert tuple(m1.fields) == tuple(m2.fields), "point fields"
+    elif kind == "plane":
+        assert str(m1.axis) == str(m2.axis), "plane axis"
+        assert approx(m1.position, m2.position), "plane position"
+        assert bool(m1.compute_flux) == bool(m2.compute_flux), "compute_flux"
+        assert tuple(m1.fields) == tuple(m2.fields), "plane fields"
+        assert str(m1.normal_direction) == str(m2.normal_direction), "normal_direction"
+        _freqs_equal(m1.frequencies, m2.frequencies)
+    elif kind == "finite_plane":
+        assert _vecs_equal(m1.position, m2.position), "finite position"
+        assert _vecs_equal(m1.size, m2.size), "finite size"
+        assert tuple(m1.fields) == tuple(m2.fields), "finite fields"
+        assert bool(m1.compute_flux) == bool(m2.compute_flux), "finite compute_flux"
+        assert str(m1.normal_direction) == str(m2.normal_direction), "finite normal_direction"
+        _freqs_equal(m1.frequencies, m2.frequencies)
+    elif kind == "closed_surface":
+        for ax in range(3):
+            assert approx(m1.bounds[ax][0], m2.bounds[ax][0]) and approx(m1.bounds[ax][1], m2.bounds[ax][1]), \
+                "closed bounds"
+        _freqs_equal(m1.frequencies, m2.frequencies)
+    elif kind == "mode":
+        assert _vecs_equal(m1.position, m2.position), "mode position"
+        assert _vecs_equal(m1.size, m2.size), "mode size"
+        assert int(m1.mode_index) == int(m2.mode_index), "mode_index"
+        assert str(m1.direction) == str(m2.direction), "mode direction"
+        assert str(m1.polarization_axis) == str(m2.polarization_axis), "mode polarization_axis"
+        assert str(m1.normal_direction) == str(m2.normal_direction), "mode normal_direction"
+        _freqs_equal(m1.frequencies, m2.frequencies)
+
+
+def assert_monitors_equal(list1: Any, list2: Any) -> None:
+    by1 = {m.name: m for m in list1}
+    by2 = {m.name: m for m in list2}
+    assert by1.keys() == by2.keys(), f"monitor names {by1.keys()} != {by2.keys()}"
+    for name, a in by1.items():
+        assert_monitor_equal(a, by2[name])
+
+
+def assert_port_equal(p1: Any, p2: Any) -> None:
+    """Assert two maxwell ModePorts match."""
+    assert _vecs_equal(p1.position, p2.position), "port position"
+    assert _vecs_equal(p1.size, p2.size), "port size"
+    assert int(p1.mode_index) == int(p2.mode_index), "port mode_index"
+    assert str(p1.direction) == str(p2.direction), "port direction"
+    assert str(p1.polarization_axis) == str(p2.polarization_axis), "port polarization_axis"
+    assert str(p1.normal_direction) == str(p2.normal_direction), "port normal_direction"
+    assert approx(p1.monitor_offset, p2.monitor_offset), "port monitor_offset"
+    _freqs_equal(p1.frequencies, p2.frequencies)
+    assert_source_time_equal(p1.source_time, p2.source_time)
+
+
 def assert_config_equal(s1: Any, s2: Any) -> None:
     """Assert two scenes share domain / grid / boundary / subpixel / symmetry / device."""
     for i in range(3):

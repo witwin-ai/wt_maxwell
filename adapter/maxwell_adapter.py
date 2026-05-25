@@ -15,6 +15,8 @@ from witwin_server import Scene, SceneObject
 from witwin_server.platform_bridge import GeometryMap, StructureMap, TransformMap
 
 from .material_adapter import MaterialAdapter
+from .monitor_map import MONITOR_COMPONENTS, MonitorMap
+from .port_map import PORT_COMPONENTS, PortMap
 from .settings_map import MARKER_COMPONENT, SettingsMap
 from .source_map import SOURCE_COMPONENTS, SourceMap
 
@@ -57,6 +59,10 @@ class MaxwellAdapter:
             studio.add_object(obj)
         for source in scene.sources:
             studio.add_object(SourceMap.to_studio(source))
+        for monitor in scene.monitors:
+            studio.add_object(MonitorMap.to_studio(monitor))
+        for port in scene.ports:
+            studio.add_object(PortMap.to_studio(port))
         for region in scene.material_regions:
             studio.add_object(MaterialAdapter.region_to_studio(region))
         studio.end_batch()
@@ -89,6 +95,10 @@ class MaxwellAdapter:
                 scene.add_material_region(MaterialAdapter.region_to_platform(obj))
             elif self._has_any(obj, SOURCE_COMPONENTS):
                 scene.add_source(SourceMap.to_platform(obj))
+            elif self._has_any(obj, MONITOR_COMPONENTS):
+                scene.add_monitor(MonitorMap.to_platform(obj))
+            elif self._has_any(obj, PORT_COMPONENTS):
+                scene.add_port(PortMap.to_platform(obj))
             elif obj.get_component("PlatformGeometry") is not None:
                 scene.add_structure(self._structure_to_platform(mw, obj))
         return scene
