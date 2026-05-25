@@ -4,7 +4,7 @@ The suite needs three things importable: the studio backend with the frozen base
 layer (``witwin_server`` + ``witwin_server.platform_bridge``), the maxwell solver
 package (``witwin.maxwell`` / ``witwin.core``), and this plugin package. The first
 two come from PYTHONPATH (set by the runner); this conftest only adds the plugins
-directory so ``importlib.import_module("wt-maxwell")`` resolves. If the base/solver
+directory so ``importlib.import_module("wt_maxwell")`` resolves. If the base/solver
 deps are not importable, the whole suite is skipped rather than erroring.
 """
 import importlib
@@ -13,12 +13,12 @@ from pathlib import Path
 
 import pytest
 
-# .../plugins/wt-maxwell/tests -> .../plugins
+# .../plugins/wt_maxwell/tests -> .../plugins
 PLUGINS_DIR = Path(__file__).resolve().parents[2]
 if str(PLUGINS_DIR) not in sys.path:
     sys.path.insert(0, str(PLUGINS_DIR))
 
-PKG = "wt-maxwell"
+PKG = "wt_maxwell"
 
 try:
     import witwin_server  # noqa: F401

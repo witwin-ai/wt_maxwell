@@ -41,7 +41,7 @@ scene into the *running editor* and rendering it is left for manual verification
 load `examples/demo_scene.py` via a `load_platform_scene` message:
 
 ```json
-{ "type": "load_platform_scene", "factory": "wt-maxwell.examples.demo_scene:build_scene" }
+{ "type": "load_platform_scene", "factory": "wt_maxwell.examples.demo_scene:build_scene" }
 ```
 
 then edit, `export_platform_scene`, and press **Solve** on the Maxwell Settings

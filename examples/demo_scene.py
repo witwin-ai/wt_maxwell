@@ -3,7 +3,7 @@
 Load it into a running editor with a ``load_platform_scene`` message:
 
     { "type": "load_platform_scene",
-      "factory": "wt-maxwell.examples.demo_scene:build_scene" }
+      "factory": "wt_maxwell.examples.demo_scene:build_scene" }
 
 The maxwell adapter detects it (``isinstance(scene, maxwell.Scene)``), translates
 it to studio objects (a ``Maxwell Settings`` object + a dielectric box + a dipole

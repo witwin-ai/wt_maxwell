@@ -16,6 +16,7 @@ core and frozen; this plugin only reads/writes it.
 from witwin_server.handlers.platform_scene import PlatformSceneHandler
 
 from . import components  # noqa: F401  (side-effect: registers maxwell components)
+from . import library_items  # noqa: F401  (side-effect: registers Maxwell library prefabs)
 from .adapter import MaxwellAdapter
 
 PlatformSceneHandler.register_adapter("maxwell", MaxwellAdapter())
