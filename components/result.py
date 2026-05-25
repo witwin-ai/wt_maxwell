@@ -91,6 +91,12 @@ class MaxwellResultComponent(Component):
                                     value_mode=str(self.value_mode), freq_index=int(self.frequency_index))
         obj = FieldViz.show_3d(vol, scene=scene, bounds=self._result.scene.domain.bounds,
                                name=f"{self.component} Field")
+        # FieldViz only stores the volume via set_volume_data; the bytes must be
+        # uploaded (sets volume_id) for the viewport to render it — mirror the
+        # library handler's post-creation hook.
+        renderer = obj.get_component("VolumeRenderer")
+        if renderer is not None:
+            renderer.export_volume_data()
         self._volume_id = obj.id
         return "Volume added to viewport"
 
