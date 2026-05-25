@@ -31,7 +31,8 @@ FIELD_COMPONENTS = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
 class MaxwellResultComponent(Component):
     """FDFD/FDTD solve + 2D slice / 3D volume field visualization."""
 
-    _result = None  # runtime Result (never serialized)
+    _result = None     # runtime Result (never serialized)
+    _volume_id = None  # id of the viewport volume object this component owns
 
     # --- solve config --------------------------------------------------------
     method = string_field("fdfd", options=["fdfd", "fdtd"], enum_toggle=True,
@@ -52,6 +53,7 @@ class MaxwellResultComponent(Component):
     value_mode = string_field("abs", options=["abs", "real", "imag"], enum_toggle=True)
     frequency_index = int_field(0, min=0, description="Frequency index (multi-frequency results)")
     log_scale = bool_field(False, description="Log10 magnitude")
+    show_3d_field = bool_field(True, description="Register the 3D field volume in the viewport after solving")
     slice_figure = figure(title="Field Slice")
 
     @button(display_name="Solve")
@@ -61,6 +63,8 @@ class MaxwellResultComponent(Component):
             return "No solve frequencies set"
         self._result = SolveRunner.run(self._owner.scene, config)
         self.update_slice()
+        if bool(self.show_3d_field):
+            self.show_volume()
         Notifications.success("Maxwell", f"{str(self.method).upper()} solve complete")
         return "Solve complete"
 
@@ -79,10 +83,15 @@ class MaxwellResultComponent(Component):
     def show_volume(self):
         if self._result is None:
             return "Solve first"
+        scene = self._owner.scene
+        # Replace the volume from a previous solve so re-solving doesn't pile them up.
+        if self._volume_id is not None and scene.get_object(self._volume_id) is not None:
+            scene.remove_object(self._volume_id)
         vol = SliceExtractor.volume(self._result, component=str(self.component),
                                     value_mode=str(self.value_mode), freq_index=int(self.frequency_index))
-        FieldViz.show_3d(vol, scene=self._owner.scene, bounds=self._result.scene.domain.bounds,
-                         name=f"{self.component} Volume")
+        obj = FieldViz.show_3d(vol, scene=scene, bounds=self._result.scene.domain.bounds,
+                               name=f"{self.component} Field")
+        self._volume_id = obj.id
         return "Volume added to viewport"
 
     def _solve_config(self):

@@ -17,23 +17,21 @@ solve are covered headlessly by the M0-M4 pytest suites).
 
 
 def build_scene():
-    """A small dielectric-box cavity with a dipole source and a plane monitor."""
+    """An empty PML domain with a single point (dipole) source at the center.
+
+    The 3D field radiated by the center source is the full FDFD solution, so no
+    structure or monitor is needed — solving it shows a clean 3D field volume.
+    Grid ~7.5 cells/wavelength at 1 GHz (lambda ~0.3 m).
+    """
     import witwin.maxwell as mw
 
     scene = mw.Scene(
         domain=mw.Domain(bounds=((-0.6, 0.6), (-0.6, 0.6), (-0.6, 0.6))),
-        grid=mw.GridSpec.uniform(0.05),
+        grid=mw.GridSpec.uniform(0.04),
         boundary=mw.BoundarySpec.pml(num_layers=10),
         device="cuda",
     )
-    scene.add_structure(mw.Structure(
-        mw.Box(position=(0.0, 0.0, 0.0), size=(0.3, 0.3, 0.3)),
-        mw.Material(eps_r=11.7, name="silicon"), name="cavity"))
-    scene.add_structure(mw.Structure(
-        mw.Sphere(position=(0.2, 0.1, 0.0), radius=0.08),
-        mw.Material(eps_r=2.1, name="ptfe"), name="bead"))
     scene.add_source(mw.PointDipole(
-        position=(-0.25, 0.0, 0.0), polarization="Ez",
-        source_time=mw.GaussianPulse(frequency=5e9, fwidth=1e9)))
-    scene.add_monitor(mw.PlaneMonitor("xy_slice", axis="z", position=0.0, fields=("Ez",)))
+        position=(0.0, 0.0, 0.0), polarization="Ez",
+        source_time=mw.CW(frequency=1e9), name="Point Source"))
     return scene

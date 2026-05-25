@@ -2,9 +2,9 @@
 
 Registers a ``Maxwell`` library category with:
 
-- **Maxwell Scene (Demo)** — a complete, immediately solvable setup (Maxwell
-  Settings with solve frequencies + a dielectric box + a dipole source + a plane
-  monitor). Drag it in, then press **Solve** on the Maxwell Settings object.
+- **Maxwell 3D Field (Demo)** — a point source at the center of an empty PML
+  domain (wt-FDTD style). Drag it in, press **Solve** on the Maxwell Settings
+  object, and the radiated 3D field volume appears in the viewport.
 - **Maxwell Settings** — just the scene-config singleton (domain / grid / boundary
   / solve settings / result + Solve button) for composing a custom scene.
 - **Dipole Source**, **Plane Monitor**, **Dielectric Box** — individual building
@@ -18,14 +18,19 @@ that one). Result/runtime state is never part of a prefab.
 from witwin_server import Library
 
 _CATEGORY = "maxwell"
-_DEFAULT_FREQ = 5e9
+_DEFAULT_FREQ = 1e9  # lambda ~0.3 m -> ~7.5 cells/wavelength on the 0.04 m demo grid
 _DOMAIN = ((-0.6, 0.6), (-0.6, 0.6), (-0.6, 0.6))
 
 
 def _config_scene():
-    """A config-only maxwell.Scene (no structures) for the Settings object."""
+    """A config-only maxwell.Scene (no structures) for the Settings object.
+
+    Grid is ~7.5 cells per wavelength at the default 1 GHz (lambda ~0.3 m) so the
+    field is well resolved — a coarse grid relative to the wavelength produces
+    numerical garbage, not a clean field.
+    """
     import witwin.maxwell as mw
-    return mw.Scene(domain=mw.Domain(bounds=_DOMAIN), grid=mw.GridSpec.uniform(0.05),
+    return mw.Scene(domain=mw.Domain(bounds=_DOMAIN), grid=mw.GridSpec.uniform(0.04),
                     boundary=mw.BoundarySpec.pml(num_layers=10), device="cuda")
 
 
@@ -49,12 +54,12 @@ def _box_object():
         mw.Material(eps_r=11.7, name="silicon"), name="Dielectric Box"))
 
 
-def _dipole_object():
+def _dipole_object(position=(0.0, 0.0, 0.0)):
     import witwin.maxwell as mw
     from .adapter.source_map import SourceMap
     return SourceMap.to_studio(mw.PointDipole(
-        position=(-0.25, 0.0, 0.0), polarization="Ez",
-        source_time=mw.CW(frequency=_DEFAULT_FREQ), name="Dipole Source"))
+        position=position, polarization="Ez",
+        source_time=mw.CW(frequency=_DEFAULT_FREQ), name="Point Source"))
 
 
 def _plane_monitor_object():
@@ -66,13 +71,15 @@ def _plane_monitor_object():
 # --- library factories (context.scene gets the extras; return the primary obj) ---
 
 def _make_demo(ctx):
-    """Full solvable scene: settings (returned) + box + dipole + plane monitor."""
+    """3D-field demo: Maxwell Settings (returned) + a point source at the domain center.
+
+    Mirrors the wt-FDTD "3D field" experience: drag it in, press Solve, and the
+    radiated 3D field volume appears in the viewport (the Settings object's
+    MaxwellResult auto-shows the volume; the field is the full FDFD solution, so no
+    structure or monitor is needed).
+    """
     settings = _settings_object(ctx.name)
-    extras = [_box_object(), _dipole_object(), _plane_monitor_object()]
-    ctx.scene.begin_batch()
-    for obj in extras:
-        ctx.scene.add_object(obj)
-    ctx.scene.end_batch()
+    ctx.scene.add_object(_dipole_object(position=(0.0, 0.0, 0.0)))
     return settings
 
 
@@ -101,9 +108,9 @@ def _make_plane_monitor(ctx):
 def register() -> None:
     """Register the Maxwell library category + prefab items."""
     Library.register_category(_CATEGORY, "Maxwell", icon="waves", order=20)
-    Library.register_item("maxwell_demo", "Maxwell Scene (Demo)", _CATEGORY,
+    Library.register_item("maxwell_demo", "Maxwell 3D Field (Demo)", _CATEGORY,
                           icon="sparkles", object_type="empty", factory=_make_demo,
-                          description="Solvable starter scene: settings + box + dipole + monitor")
+                          description="Point source at the domain center; Solve to see the 3D field")
     Library.register_item("maxwell_settings", "Maxwell Settings", _CATEGORY,
                           icon="settings", object_type="empty", factory=_make_settings,
                           description="Scene config + Solve button (build your own scene)")
