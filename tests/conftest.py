@@ -60,21 +60,21 @@ def solve_mod(wtm):
 
 @pytest.fixture(scope="session")
 def device():
-    """'cuda' when available, else 'cpu' (FDFD/FDTD run on either for small grids)."""
+    """'cuda' when available, else 'cpu' (FDTD runs on either for tiny test grids)."""
     import torch
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @pytest.fixture(scope="session")
 def solver_ready(device):
-    """Skip the live-solve suite if the maxwell solver can't run a tiny FDFD here."""
+    """Skip the live-solve suite if the maxwell solver can't run a tiny FDTD here."""
     import witwin.maxwell as mw
     try:
         scene = mw.Scene(domain=mw.Domain(bounds=((-0.3, 0.3), (-0.3, 0.3), (-0.3, 0.3))),
                          grid=mw.GridSpec.uniform(0.15), boundary=mw.BoundarySpec.pml(6), device=device)
         scene.add_source(mw.PointDipole(position=(0.0, 0.0, 0.0), polarization="Ez",
-                                        source_time=mw.CW(frequency=1e9)))
-        mw.Simulation.fdfd(scene, frequency=1e9).run()
+                                        source_time=mw.GaussianPulse(frequency=1e9, fwidth=2e8)))
+        mw.Simulation.fdtd(scene, frequencies=(1e9,), run_time=mw.TimeConfig(time_steps=20)).run()
     except Exception as exc:  # noqa: BLE001 - test gate: needs-user-verification if solver absent
         pytest.skip(f"maxwell solver unavailable in this environment: {exc}")
     return True

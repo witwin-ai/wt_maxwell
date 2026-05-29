@@ -8,6 +8,7 @@ and shared by every source (and by ``ModePort`` in M3).
 from typing import Any, Optional
 
 from witwin_server import SceneObject
+from witwin_server.utils.mitsuba_utils import get_world_transform
 
 from .common import axis_field as _axis_from_letter
 from .common import axis_name as _axis_name
@@ -127,7 +128,7 @@ class SourceMap:
         mode = str(comp.polarization_mode)
         polarization = tuple(_vec(comp.polarization)) if mode == "vector" else mode
         return mw.PointDipole(
-            position=tuple(_vec(obj.get_component("Transform").position)),
+            position=SourceMap._world_position(obj),
             polarization=polarization, width=_f(comp.width), profile=str(comp.profile),
             source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)), name=obj.name)
 
@@ -208,7 +209,12 @@ class SourceMap:
     def _mode_to_platform(mw: Any, obj: SceneObject) -> Any:
         comp = obj.get_component("ModeSource")
         return mw.ModeSource(
-            position=tuple(_vec(obj.get_component("Transform").position)),
+            position=SourceMap._world_position(obj),
             size=tuple(_vec(comp.size)), mode_index=int(comp.mode_index),
             direction=str(comp.direction), polarization=str(comp.polarization),
             source_time=SourceTimeMap.to_platform(comp, bool(comp.st_enabled)), name=obj.name)
+
+    @staticmethod
+    def _world_position(obj: SceneObject) -> tuple[float, float, float]:
+        world = get_world_transform(obj)
+        return (float(world[0, 3]), float(world[1, 3]), float(world[2, 3]))

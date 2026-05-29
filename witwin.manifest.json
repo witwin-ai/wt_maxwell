@@ -1,9 +1,9 @@
 {
   "id": "witwin.maxwell",
-  "name": "Maxwell (FDFD/FDTD)",
+  "name": "Maxwell (FDTD)",
   "version": "0.1.0",
   "author": "",
-  "description": "Round-trips witwin.maxwell solver scenes <-> the studio editor (materials, sources, monitors, ports, boundaries) and runs FDFD/FDTD with 2D slice / 3D volume field visualization.",
+  "description": "Round-trips witwin.maxwell solver scenes <-> the studio editor (materials, sources, monitors, ports, boundaries) and runs FDTD with 2D slice / 3D volume field visualization.",
   "license": "GPL-3.0-or-later",
   "engines": { "witwin": "^1.0.0" },
   "dependencies": ["scipy", "numpy"],

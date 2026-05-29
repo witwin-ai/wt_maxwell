@@ -2,14 +2,13 @@
 
 ``SolveRunner`` is the export->solve half of the edit loop: it rebuilds the
 platform ``maxwell.Scene`` from the live studio scene (via :class:`MaxwellAdapter`)
-and runs ``Simulation.fdfd`` (single frequency) or ``Simulation.fdtd`` (multi
-frequency). ``SliceExtractor`` turns a solved field volume into a 2D orthogonal
-slice (reusing maxwell's own ``extract_orthogonal_slice``) for the Results-panel /
-figure surface; 3D volumes go to the viewport via the shared ``FieldViz`` helper.
+and runs ``Simulation.fdtd``. ``SliceExtractor`` turns a solved field volume into
+a 2D orthogonal slice (reusing maxwell's own ``extract_orthogonal_slice``) for the
+figure surface; 3D volumes are written back onto the solver's own Field surface.
 
 Result tensors are runtime state — never serialized into the scene.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
@@ -19,13 +18,10 @@ from .maxwell_adapter import MaxwellAdapter
 
 @dataclass
 class SolveConfig:
-    """Solve configuration mirrored from the MaxwellResult component + solve settings."""
+    """Solve configuration mirrored from the MaxwellSolver component."""
 
-    method: str = "fdfd"                 # "fdfd" | "fdtd"
-    frequencies: Tuple[float, ...] = ()  # Hz; FDFD uses the first, FDTD uses all
-    gmres_max_iter: int = 5000
-    gmres_tol: float = 1e-6
-    gmres_restart: int = 200
+    method: str = "fdtd"
+    frequencies: Tuple[float, ...] = ()
     absorber: str = "cpml"               # FDTD: "cpml" | "pml"
     full_field_dft: bool = False         # FDTD
     time_steps: Optional[int] = None     # FDTD: None = auto
@@ -46,14 +42,11 @@ class SolveRunner:
 
     @staticmethod
     def build(platform_scene: Any, config: SolveConfig) -> Any:
-        """Build a ``Simulation`` (FDFD or FDTD) for a platform scene + config."""
+        """Build an FDTD ``Simulation`` for a platform scene + config."""
         import witwin.maxwell as mw
 
-        if config.method == "fdfd":
-            solver = mw.GMRES(max_iter=config.gmres_max_iter, tol=config.gmres_tol,
-                              restart=config.gmres_restart)
-            frequency = config.frequencies[0] if config.frequencies else None
-            return mw.Simulation.fdfd(platform_scene, frequency=frequency, solver=solver)
+        if config.method != "fdtd":
+            raise ValueError("Maxwell Solver only supports FDTD")
         run_time = None if config.time_steps is None else mw.TimeConfig(time_steps=int(config.time_steps))
         return mw.Simulation.fdtd(
             platform_scene, frequencies=tuple(config.frequencies) or None,

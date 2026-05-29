@@ -2,16 +2,16 @@
 
 The M0–M4 phases cover the complete declarative authoring + solve surface:
 scene config (domain / grid / boundary global+per-axis+per-face / subpixel /
-symmetry / device), the full unified `EMMaterial` (Debye/Drude/Lorentz electric
+symmetry / device), the full unified `Material` EM superset (Debye/Drude/Lorentz electric
 **and** magnetic, diagonal anisotropy, Kerr) + `MaterialRegion`, all four sources
 with the three temporal profiles and TFSF, all six monitors, `ModePort`, and the
-FDFD/FDTD solve with 2D slice / 3D volume field visualization.
+FDTD solve with 2D slice / 3D volume field visualization.
 
 The following are intentionally **deferred** (master §9, plan §7.3 / §8 M5):
 
 ## Postprocessing (plan §7.3 — "Phase 4, not v1")
 `maxwell.postprocess` offers S-parameters, mode overlap, bistatic RCS,
-directivity, and NFFT/NTFF. These should become buttons on `MaxwellResult` that
+directivity, and NFFT/NTFF. These should become buttons on `MaxwellSolver` that
 call the relevant postprocess function and push a `Results.plot` / `Results.commit`.
 Not implemented yet — the solve `Result` is kept server-side, so adding these is a
 pure additive step on `components/result.py`.

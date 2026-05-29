@@ -1,0 +1,232 @@
+"""Unified Maxwell solver component.
+
+``MaxwellSolver`` is the single scene-level component for a Maxwell simulation:
+domain, grid, boundary, solver settings, and result visualization live together
+as foldout groups on the Maxwell Settings object. The component subclasses the
+core Field component so solved field data is written back onto the solver itself
+via ``set_volume_data`` instead of creating a separate field object.
+"""
+import numpy as np
+
+from witwin_server import Notifications
+from witwin_server.core.components import (
+    bool_field,
+    button,
+    component,
+    define_group,
+    figure,
+    float_field,
+    foldout_group,
+    int_field,
+    list_field,
+    string_field,
+    tab_group,
+    vector3_field,
+)
+from witwin_server.core.components.field_region import FieldComponent
+
+from ..adapter.common import num
+from ..adapter.solve import SliceExtractor, SolveConfig, SolveRunner
+
+BOUNDARY_KINDS = ["none", "pml", "periodic", "bloch", "pec", "pmc"]
+SYMMETRY_KINDS = ["none", "PEC", "PMC"]
+FIELD_COMPONENTS = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
+
+_CAT = "Simulation/Maxwell"
+_DOMAIN = "Domain"
+_GRID = "Grid"
+_BOUNDARY = "Boundary"
+_SETTINGS = "Settings"
+_RESULTS = "Results"
+_FDTD = {"field_name": "method", "operator": "eq", "value": "fdtd"}
+
+
+@component(name="MaxwellSolver", display_name="Maxwell Solver", category=_CAT)
+class MaxwellSolverComponent(FieldComponent):
+    """Maxwell scene configuration, solve controls, and field visualization."""
+
+    _result = None
+
+    define_group(foldout_group(_DOMAIN, display_name="Domain"))
+    define_group(foldout_group(_GRID, display_name="Grid"))
+    define_group(foldout_group(_BOUNDARY, display_name="Boundary"))
+    define_group(foldout_group(_SETTINGS, display_name="Settings"))
+    define_group(foldout_group(_RESULTS, display_name="Results"))
+    define_group(tab_group("Renderer", "None", "Slices", "Volume", "SDF", "Vector",
+                           display_name="Rendering", sync_field="render_mode",
+                           tab_conditions={
+                               "Volume": {"field_name": "dimension", "operator": "eq", "value": "3D"},
+                               "SDF": {"field_name": "dimension", "operator": "eq", "value": "3D"},
+                           }))
+
+    # FieldComponent state used by the viewport visualizer. Maxwell exposes its
+    # own domain/result controls, so these inherited controls stay internal.
+    dimension = string_field("3D", options=["2D", "3D"], hidden=True)
+    plane = string_field("XZ", options=["XY", "XZ", "YZ"], hidden=True)
+    frequency_dependent_resolution = bool_field(False, hidden=True)
+    frequency = float_field(1e9, hidden=True)
+    min_bound = vector3_field([-1.0, -1.0, -1.0], hidden=True)
+    max_bound = vector3_field([1.0, 1.0, 1.0], hidden=True)
+    resolution = vector3_field([1.0, 1.0, 1.0], hidden=True)
+    render_mode = string_field("None", options=["None", "Slices", "Volume", "SDF", "Vector"], hidden=True)
+    cache_in_memory = bool_field(True, hidden=True)
+    volume_id = string_field("", hidden=True)
+
+    # Domain.
+    bounds_min = vector3_field([-1.0, -1.0, -1.0], description="Domain min corner (m)", group=_DOMAIN)
+    bounds_max = vector3_field([1.0, 1.0, 1.0], description="Domain max corner (m)", group=_DOMAIN)
+
+    # Grid.
+    uniform = bool_field(True, description="Use a single spacing for all axes", group=_GRID)
+    dl = float_field(0.05, min=1e-9, show_if="uniform", description="Uniform cell size (m)", group=_GRID)
+    dx = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along x (m)", group=_GRID)
+    dy = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along y (m)", group=_GRID)
+    dz = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along z (m)", group=_GRID)
+
+    # Boundary.
+    mode = string_field("global", options=["global", "per_axis", "per_face"],
+                        enum_toggle=True, description="Boundary specification scope", group=_BOUNDARY)
+    kind = string_field("pml", options=BOUNDARY_KINDS, description="Boundary kind", group=_BOUNDARY)
+    num_layers = int_field(15, min=1, show_if={"field_name": "kind", "operator": "eq", "value": "pml"},
+                           description="PML layers", group=_BOUNDARY)
+    strength = float_field(1e6, min=0.0, show_if={"field_name": "kind", "operator": "eq", "value": "pml"},
+                           description="PML strength", group=_BOUNDARY)
+    bloch_wavevector = vector3_field(
+        [0.0, 0.0, 0.0],
+        show_if={"field_name": "kind", "operator": "eq", "value": "bloch"},
+        description="Bloch wavevector (rad/m)", group=_BOUNDARY)
+    x = string_field("pml", options=BOUNDARY_KINDS,
+                     show_if={"field_name": "mode", "operator": "eq", "value": "per_axis"}, group=_BOUNDARY)
+    y = string_field("pml", options=BOUNDARY_KINDS,
+                     show_if={"field_name": "mode", "operator": "eq", "value": "per_axis"}, group=_BOUNDARY)
+    z = string_field("pml", options=BOUNDARY_KINDS,
+                     show_if={"field_name": "mode", "operator": "eq", "value": "per_axis"}, group=_BOUNDARY)
+    x_low = string_field("pml", options=BOUNDARY_KINDS,
+                         show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+    x_high = string_field("pml", options=BOUNDARY_KINDS,
+                          show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+    y_low = string_field("pml", options=BOUNDARY_KINDS,
+                         show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+    y_high = string_field("pml", options=BOUNDARY_KINDS,
+                          show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+    z_low = string_field("pml", options=BOUNDARY_KINDS,
+                         show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+    z_high = string_field("pml", options=BOUNDARY_KINDS,
+                          show_if={"field_name": "mode", "operator": "eq", "value": "per_face"}, group=_BOUNDARY)
+
+    # Scene / solve settings.
+    subpixel_uniform = bool_field(True, description="One subpixel sample count for all axes", group=_SETTINGS)
+    subpixel = int_field(1, min=1, show_if="subpixel_uniform",
+                         description="Subpixel material samples per axis", group=_SETTINGS)
+    subpixel_x = int_field(1, min=1, hide_if="subpixel_uniform", group=_SETTINGS)
+    subpixel_y = int_field(1, min=1, hide_if="subpixel_uniform", group=_SETTINGS)
+    subpixel_z = int_field(1, min=1, hide_if="subpixel_uniform", group=_SETTINGS)
+    symmetry_x = string_field("none", options=SYMMETRY_KINDS, description="Symmetry plane normal to x",
+                              group=_SETTINGS)
+    symmetry_y = string_field("none", options=SYMMETRY_KINDS, description="Symmetry plane normal to y",
+                              group=_SETTINGS)
+    symmetry_z = string_field("none", options=SYMMETRY_KINDS, description="Symmetry plane normal to z",
+                              group=_SETTINGS)
+    device = string_field("cuda", options=["cuda", "cpu"], enum_toggle=True,
+                          description="Solve device (FDTD requires CUDA for practical scenes)", group=_SETTINGS)
+    frequencies = list_field(float_field(1e9, min=0.0), default=[],
+                             description="Solve frequencies (Hz)", group=_SETTINGS)
+    method = string_field("fdtd", options=["fdtd"], hidden=True)
+    absorber = string_field("cpml", options=["cpml", "pml"], show_if=_FDTD, group=_SETTINGS)
+    full_field_dft = bool_field(True, hidden=True)
+    time_steps_auto = bool_field(True, show_if=_FDTD, group=_SETTINGS)
+    time_steps = int_field(1000, min=1, hide_if="time_steps_auto", group=_SETTINGS)
+
+    # Results.
+    slice_axis = string_field("z", options=["x", "y", "z"], enum_toggle=True, title="Field slice", group=_RESULTS)
+    slice_position = float_field(0.0, description="Slice coordinate along the axis (m)", group=_RESULTS)
+    component = string_field("Ez", options=FIELD_COMPONENTS, description="Field component", group=_RESULTS)
+    value_mode = string_field("abs", options=["abs", "real", "imag"], enum_toggle=True, group=_RESULTS)
+    frequency_index = int_field(0, min=0, description="Frequency index (multi-frequency results)", group=_RESULTS)
+    log_scale = bool_field(False, description="Log10 magnitude", group=_RESULTS)
+    show_3d_field = bool_field(True, description="Update this solver's 3D field volume after solving", group=_RESULTS)
+    slice_figure = figure(title="Field Slice", group=_RESULTS)
+
+    @button(display_name="Solve", group=_RESULTS)
+    def solve(self):
+        config = self._solve_config()
+        if config is None:
+            return "No solve frequencies set"
+        self._ensure_default_source()
+        self._result = SolveRunner.run(self._owner.scene, config)
+        self.update_slice()
+        if bool(self.show_3d_field):
+            self.show_volume()
+        Notifications.success("Maxwell", f"{str(self.method).upper()} solve complete")
+        return "Solve complete"
+
+    @button(display_name="Update Slice", group=_RESULTS)
+    def update_slice(self):
+        if self._result is None:
+            return "Solve first"
+        sl = SliceExtractor.extract(
+            self._result, axis=str(self.slice_axis), position=float(num(self.slice_position)),
+            component=str(self.component), value_mode=str(self.value_mode),
+            freq_index=int(self.frequency_index), log_scale=bool(self.log_scale))
+        self.slice_figure.clear().imshow(sl.data).title(f"{self.component} ({self.value_mode})")
+        return "Slice updated"
+
+    @button(display_name="Show 3D Volume", group=_RESULTS)
+    def show_volume(self):
+        if self._result is None:
+            return "Solve first"
+        vol = SliceExtractor.volume(self._result, component=str(self.component),
+                                    value_mode=str(self.value_mode), freq_index=int(self.frequency_index))
+        self._sync_field_bounds()
+        self.set_volume_data(np.asarray(vol, dtype=np.float32))
+        self.set_field("render_mode", "Volume", force=True)
+        self.export_volume_data()
+        return "Volume updated"
+
+    def _ensure_default_source(self) -> bool:
+        """Create a small FDTD-compatible point source if the scene has none."""
+        from ..adapter.source_map import SOURCE_COMPONENTS, SourceMap
+
+        scene = self._owner.scene if self._owner else None
+        if scene is None:
+            return False
+        for obj in scene.objects.values():
+            if any(obj.get_component(name) is not None for name in SOURCE_COMPONENTS):
+                return False
+
+        import witwin.maxwell as mw
+
+        frequency = next((num(f) for f in self.frequencies), 1e9)
+        source = mw.PointDipole(
+            position=(0.0, 0.0, 0.0),
+            polarization="Ez",
+            source_time=mw.GaussianPulse(frequency=frequency, fwidth=frequency * 0.2),
+            name="Default FDTD Source",
+        )
+        scene.add_object(SourceMap.to_studio(source))
+        return True
+
+    def _solve_config(self):
+        freqs = tuple(num(f) for f in self.frequencies)
+        if not freqs:
+            Notifications.warning("Maxwell", "Set solve frequencies in Maxwell Solver first")
+            return None
+        if str(self.device) == "cpu":
+            Notifications.warning("Maxwell", "Solving on CPU; large simulations require CUDA")
+        return SolveConfig(
+            method=str(self.method), frequencies=freqs,
+            absorber=str(self.absorber),
+            full_field_dft=True,
+            time_steps=None if bool(self.time_steps_auto) else int(self.time_steps))
+
+    def _sync_field_bounds(self) -> None:
+        offset = [0.0, 0.0, 0.0]
+        if self._owner is not None:
+            from witwin_server.utils.mitsuba_utils import get_world_transform
+
+            world = get_world_transform(self._owner)
+            offset = [float(world[i, 3]) for i in range(3)]
+        bounds_min = [float(num(v)) + offset[i] for i, v in enumerate(self.bounds_min)]
+        bounds_max = [float(num(v)) + offset[i] for i, v in enumerate(self.bounds_max)]
+        self.set_field("min_bound", bounds_min, silent=True, force=True)
+        self.set_field("max_bound", bounds_max, silent=True, force=True)

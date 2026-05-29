@@ -10,7 +10,7 @@ position (Point / FinitePlane / ClosedSurface / Mode) use the object's
 (center via Transform + extent via ``size``); the six faces are derived by the
 platform, not expanded into editor objects.
 """
-from witwin_server.components import (
+from witwin_server.core.components import (
     Component,
     bool_field,
     component,

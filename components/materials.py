@@ -1,6 +1,6 @@
 """MaterialRegion — maxwell topology-optimization region (maxwell-only component).
 
-The material *component* is the shared unified ``EMMaterial`` (core); this adds
+The material *component* is the shared unified ``Material`` (core); this adds
 only the optimization region. It lives on an object that also carries a
 ``PlatformGeometry`` of ``kind="box"`` (the platform enforces Box-only regions).
 
@@ -9,7 +9,7 @@ runtime/optimization state, not editor state, so only its **shape** and the
 bounds round-trip; the values are never serialized (master §5.1). The adjoint /
 optimization loop itself is out of scope for v1.
 """
-from witwin_server.components import (
+from witwin_server.core.components import (
     Component,
     bool_field,
     component,

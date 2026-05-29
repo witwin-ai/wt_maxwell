@@ -9,7 +9,7 @@ The maxwell adapter detects it (``isinstance(scene, maxwell.Scene)``), translate
 it to studio objects (a ``Maxwell Settings`` object + a dielectric box + a dipole
 source + a plane monitor), and renders them. Editing then exporting via
 ``export_platform_scene`` rebuilds an equivalent ``maxwell.Scene``; pressing
-``Solve`` on the Maxwell Settings object runs FDFD and shows the field slice.
+``Solve`` on the Maxwell Settings object runs FDTD and shows the field slice.
 
 This factory is the live-editor verification left for the user (the round-trip and
 solve are covered headlessly by the M0-M4 pytest suites).
@@ -19,7 +19,7 @@ solve are covered headlessly by the M0-M4 pytest suites).
 def build_scene():
     """An empty PML domain with a single point (dipole) source at the center.
 
-    The 3D field radiated by the center source is the full FDFD solution, so no
+    The 3D field radiated by the center source is the full FDTD solution, so no
     structure or monitor is needed — solving it shows a clean 3D field volume.
     Grid ~7.5 cells/wavelength at 1 GHz (lambda ~0.3 m).
     """
@@ -33,5 +33,5 @@ def build_scene():
     )
     scene.add_source(mw.PointDipole(
         position=(0.0, 0.0, 0.0), polarization="Ez",
-        source_time=mw.CW(frequency=1e9), name="Point Source"))
+        source_time=mw.GaussianPulse(frequency=1e9, fwidth=2e8), name="Point Source"))
     return scene

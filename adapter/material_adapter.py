@@ -1,14 +1,14 @@
-"""EMMaterial <-> maxwell.Material (full superset) + MaterialRegion round-trip.
+"""Material <-> maxwell.Material (full superset) + MaterialRegion round-trip.
 
-The maxwell adapter is the only adapter that reads the unified ``EMMaterial``
-component's *advanced* fields (Debye/Drude/Lorentz poles for eps and mu, diagonal
-anisotropy tensors, Kerr) and builds the full ``maxwell.Material``. The base
-``MaterialMap`` (core) only handles the scalar subset.
+The maxwell adapter is the only adapter that reads the unified ``Material``
+component's *advanced* EM fields (Debye/Drude/Lorentz poles for eps and mu,
+diagonal anisotropy tensors, Kerr) and builds the full ``maxwell.Material``.
+The base ``MaterialMap`` (core) only handles the scalar subset.
 
 The platform marks several combinations ``NotImplemented`` (media.py / compiler).
 We mirror them as adapter-side ``ValueError`` guards so the editor never emits an
 invalid material (the same combinations are also surfaced as ``info_box`` warnings
-on the ``EMMaterial`` component schema in core).
+on the ``Material`` component schema in core).
 
 ``MaterialRegion`` (topology optimization) round-trips its shape/bounds only; the
 density tensor is the optimization design variable (runtime state), so it is never
@@ -46,11 +46,15 @@ def _isotropic(vec: List[float], scalar: float) -> bool:
 
 
 class MaterialAdapter:
-    """EMMaterial <-> ``maxwell.Material`` (full superset) + MaterialRegion."""
+    """Material <-> ``maxwell.Material`` (full superset) + MaterialRegion."""
 
     @staticmethod
     def to_platform(em: Any) -> Any:
-        """Build a ``maxwell.Material`` from an EMMaterial component (full superset)."""
+        """Build a ``maxwell.Material`` from a ``Material`` component (full superset).
+
+        The parameter is still called ``em`` for clarity of intent — these
+        are the EM-side fields on the unified ``Material`` component.
+        """
         import witwin.maxwell as mw
 
         model = str(em.model)
@@ -108,10 +112,13 @@ class MaterialAdapter:
 
     @staticmethod
     def overlay_studio(em: Any, material: Any) -> None:
-        """Overlay a ``maxwell.Material``'s advanced fields onto an EMMaterial component.
+        """Overlay a ``maxwell.Material``'s advanced fields onto a ``Material`` component.
 
         The scalar part is already written by the base ``StructureMap``; this adds the
         dispersion / anisotropy / Kerr fields and sets ``model`` accordingly.
+
+        ``em`` is the unified Material component (parameter name kept for clarity
+        of intent — these are the EM-side fields).
         """
         if getattr(material, "is_dispersive", False):
             em.model = "dispersive"
@@ -144,9 +151,9 @@ class MaterialAdapter:
     def region_to_studio(region: Any) -> Any:
         """Build a region ``SceneObject`` (Box geometry + MaterialRegion component)."""
         from witwin_server import SceneObject
-        from witwin_server.platform_bridge import GeometryMap
-        from witwin_server.components import PlatformGeometryComponent
-        from witwin_server.components.mesh import DRJIT_AVAILABLE
+        from witwin_server.features.platform.bridge import GeometryMap
+        from witwin_server.core.components import PlatformGeometryComponent
+        from witwin_server.core.components.mesh import DRJIT_AVAILABLE
         import numpy as np
 
         from ..components.materials import MaterialRegionComponent
@@ -181,7 +188,7 @@ class MaterialAdapter:
         """Rebuild a ``maxwell.MaterialRegion`` from a region object (zero density)."""
         import torch
         import witwin.maxwell as mw
-        from witwin_server.platform_bridge import GeometryMap, TransformMap
+        from witwin_server.features.platform.bridge import GeometryMap, TransformMap
 
         comp = obj.get_component("MaterialRegion")
         geom = obj.get_component("PlatformGeometry")

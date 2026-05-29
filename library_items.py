@@ -5,8 +5,8 @@ Registers a ``Maxwell`` library category with:
 - **Maxwell 3D Field (Demo)** — a point source at the center of an empty PML
   domain (wt-FDTD style). Drag it in, press **Solve** on the Maxwell Settings
   object, and the radiated 3D field volume appears in the viewport.
-- **Maxwell Settings** — just the scene-config singleton (domain / grid / boundary
-  / solve settings / result + Solve button) for composing a custom scene.
+- **Maxwell Settings** — one Maxwell Solver component with domain / grid / boundary
+  / settings / result foldouts and a Solve button for composing a custom scene.
 - **Dipole Source**, **Plane Monitor**, **Dielectric Box** — individual building
   blocks.
 
@@ -40,7 +40,7 @@ def _settings_object(name="Maxwell Settings"):
 
     obj = SettingsMap.to_studio(_config_scene())
     obj.name = name
-    solve = obj.get_component("MaxwellSolveSettings")
+    solve = obj.get_component("MaxwellSolver")
     if solve is not None:
         solve.frequencies = [_DEFAULT_FREQ]
     return obj
@@ -48,8 +48,9 @@ def _settings_object(name="Maxwell Settings"):
 
 def _box_object():
     import witwin.maxwell as mw
-    from witwin_server.platform_bridge import StructureMap
-    return StructureMap.to_studio(mw.Structure(
+    from .adapter.maxwell_adapter import MaxwellAdapter
+
+    return MaxwellAdapter._structure_to_studio(mw.Structure(
         mw.Box(position=(0.0, 0.0, 0.0), size=(0.3, 0.3, 0.3)),
         mw.Material(eps_r=11.7, name="silicon"), name="Dielectric Box"))
 
@@ -59,7 +60,8 @@ def _dipole_object(position=(0.0, 0.0, 0.0)):
     from .adapter.source_map import SourceMap
     return SourceMap.to_studio(mw.PointDipole(
         position=position, polarization="Ez",
-        source_time=mw.CW(frequency=_DEFAULT_FREQ), name="Point Source"))
+        source_time=mw.GaussianPulse(frequency=_DEFAULT_FREQ, fwidth=_DEFAULT_FREQ * 0.2),
+        name="Point Source"))
 
 
 def _plane_monitor_object():
@@ -75,8 +77,8 @@ def _make_demo(ctx):
 
     Mirrors the wt-FDTD "3D field" experience: drag it in, press Solve, and the
     radiated 3D field volume appears in the viewport (the Settings object's
-    MaxwellResult auto-shows the volume; the field is the full FDFD solution, so no
-    structure or monitor is needed).
+    Maxwell Solver auto-shows its own volume; the field is the full FDTD solution,
+    so no structure or monitor is needed).
     """
     settings = _settings_object(ctx.name)
     ctx.scene.add_object(_dipole_object(position=(0.0, 0.0, 0.0)))

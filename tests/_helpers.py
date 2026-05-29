@@ -1,7 +1,7 @@
 """Shared round-trip assertion helpers for the wt-maxwell test suite."""
 from typing import Any
 
-from witwin_server.platform_bridge import GeometryMap
+from witwin_server.features.platform.bridge import GeometryMap
 
 TOL = 1e-6
 

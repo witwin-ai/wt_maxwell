@@ -1,17 +1,19 @@
-"""Scene-level config interchange: maxwell scene config <-> Maxwell Settings object.
+"""Scene-level config interchange: maxwell scene config <-> Maxwell Solver object.
 
 ``to_studio`` reads a ``maxwell.Scene`` (duck-typed) into a single ``Empty``
-``SceneObject`` carrying MaxwellDomain / MaxwellGrid / MaxwellBoundary /
-MaxwellSolveSettings. ``build_config`` reads those components back into the
-``maxwell`` objects needed to construct a ``Scene`` (lazy-imports witwin.maxwell).
+``SceneObject`` carrying one MaxwellSolver component. ``build_config`` reads that
+component back into the ``maxwell`` objects needed to construct a ``Scene``
+(lazy-imports witwin.maxwell).
 """
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
 from witwin_server import SceneObject
+from witwin_server.utils.mitsuba_utils import get_world_transform
 
 SETTINGS_NAME = "Maxwell Settings"
-MARKER_COMPONENT = "MaxwellDomain"
+MARKER_COMPONENT = "MaxwellSolver"
+LEGACY_MARKER_COMPONENT = "MaxwellDomain"
 
 
 def _f(value: Any) -> float:
@@ -40,36 +42,31 @@ class SceneConfig:
 
 
 class SettingsMap:
-    """Maxwell scene config <-> the Maxwell Settings object's four components."""
+    """Maxwell scene config <-> the Maxwell Settings object's solver component."""
 
     @staticmethod
     def to_studio(scene: Any) -> SceneObject:
         """Build the Maxwell Settings ``Empty`` object from a ``maxwell.Scene``."""
-        from ..components.result import MaxwellResultComponent
-        from ..components.settings import (
-            MaxwellBoundaryComponent,
-            MaxwellDomainComponent,
-            MaxwellGridComponent,
-            MaxwellSolveSettingsComponent,
-        )
+        from ..components.solver import MaxwellSolverComponent
 
         obj = SceneObject(name=SETTINGS_NAME, mesh_type="Empty")
-        SettingsMap._read_domain(obj.add_component(MaxwellDomainComponent()), scene.domain)
-        SettingsMap._read_grid(obj.add_component(MaxwellGridComponent()), scene.grid)
-        SettingsMap._read_boundary(obj.add_component(MaxwellBoundaryComponent()), scene.boundary)
-        SettingsMap._read_solve(obj.add_component(MaxwellSolveSettingsComponent()), scene)
-        obj.add_component(MaxwellResultComponent())  # solve button + field viz (no round-trip data)
+        solver = obj.add_component(MaxwellSolverComponent())
+        SettingsMap._read_domain(solver, scene.domain)
+        SettingsMap._read_grid(solver, scene.grid)
+        SettingsMap._read_boundary(solver, scene.boundary)
+        SettingsMap._read_solve(solver, scene)
         return obj
 
     @staticmethod
     def build_config(settings_obj: SceneObject) -> SceneConfig:
-        """Read the four components back into ``maxwell`` objects for ``Scene(...)``."""
+        """Read the solver component back into ``maxwell`` objects for ``Scene(...)``."""
         import witwin.maxwell as mw
 
-        domain = settings_obj.get_component("MaxwellDomain")
-        grid = settings_obj.get_component("MaxwellGrid")
-        boundary = settings_obj.get_component("MaxwellBoundary")
-        solve = settings_obj.get_component("MaxwellSolveSettings")
+        solver = settings_obj.get_component(MARKER_COMPONENT)
+        domain = solver or settings_obj.get_component("MaxwellDomain")
+        grid = solver or settings_obj.get_component("MaxwellGrid")
+        boundary = solver or settings_obj.get_component("MaxwellBoundary")
+        solve = solver or settings_obj.get_component("MaxwellSolveSettings")
         return SceneConfig(
             domain=SettingsMap._build_domain(mw, domain),
             grid=SettingsMap._build_grid(mw, grid),
@@ -86,10 +83,19 @@ class SettingsMap:
         bounds = domain.bounds
         comp.bounds_min = [float(bounds[i][0]) for i in range(3)]
         comp.bounds_max = [float(bounds[i][1]) for i in range(3)]
+        if hasattr(comp, "_sync_field_bounds"):
+            comp._sync_field_bounds()
 
     @staticmethod
     def _build_domain(mw: Any, comp: Any) -> Any:
         lo, hi = _vec3(comp.bounds_min), _vec3(comp.bounds_max)
+        owner = getattr(comp, "_owner", None)
+        offset = [0.0, 0.0, 0.0]
+        if owner is not None:
+            world = get_world_transform(owner)
+            offset = [float(world[i, 3]) for i in range(3)]
+        lo = [lo[i] + offset[i] for i in range(3)]
+        hi = [hi[i] + offset[i] for i in range(3)]
         return mw.Domain(bounds=((lo[0], hi[0]), (lo[1], hi[1]), (lo[2], hi[2])))
 
     # --- grid ----------------------------------------------------------------
