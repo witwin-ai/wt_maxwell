@@ -7,6 +7,25 @@
   "license": "GPL-3.0-or-later",
   "engines": { "witwin": "^1.0.0" },
   "dependencies": ["scipy", "numpy"],
+  "contributes": {
+    "solvers": [
+      {
+        "id": "witwin.maxwell.fdtd",
+        "title": "Maxwell FDTD",
+        "entry": "solver_host.py",
+        "runtime": { "python": "${env:WITWIN_MAXWELL_PYTHON}" },
+        "lifecycle": "warm",
+        "idleTimeoutSec": 300,
+        "cancelGraceSec": 5,
+        "maxParallel": 1,
+        "capabilities": {
+          "cancel": true,
+          "partials": true,
+          "query": ["extract_slice", "extract_volume"]
+        }
+      }
+    ]
+  },
   "icon": "waves",
   "enabled": true
 }

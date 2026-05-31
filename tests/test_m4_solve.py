@@ -5,6 +5,8 @@ Loads a maxwell scene, round-trips it through the adapter, re-runs
 checks the 2D slice extraction and the 3D viewport volume registration. The whole
 suite skips (needs-user-verification) if the solver can't run in this environment.
 """
+import hashlib
+
 import witwin.maxwell as mw
 import numpy as np
 import pytest
@@ -89,22 +91,167 @@ def test_show_3d_volume_registers_object():
     assert obj.id in target.objects
 
 
-def test_maxwell_solver_volume_stays_on_solver(adapter, solve_mod, device, monkeypatch):
+def test_maxwell_solver_volume_stays_on_solver(adapter, device, tmp_path, monkeypatch):
+    import wt_maxwell.components.solver as solver_mod
+
     scene = _scene(device)
     studio = adapter.to_studio(scene)
     settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
     solver = settings.get_component("MaxwellSolver")
+    solver._solver_result_handle = "handle-1"
+    solver._solver_run_id = "run-1"
+    volume_path = tmp_path / "volume.npy"
+    np.save(volume_path, np.ones((4, 4, 4), dtype=np.float32), allow_pickle=False)
+    digest = hashlib.sha256(volume_path.read_bytes()).hexdigest()
+
+    class FakeSolvers:
+        def read_result_ref(self, solver_id, ref):
+            assert solver_id == "witwin.maxwell.fdtd"
+            assert ref["path"] == str(volume_path)
+            return volume_path.read_bytes()
+
+        def query(self, solver_id, result_handle, op, params, **kwargs):
+            assert solver_id == "witwin.maxwell.fdtd"
+            assert result_handle == "handle-1"
+            assert op == "extract_volume"
+            return {
+                "data": {
+                    "resultRef": {
+                        "kind": "npy",
+                        "path": str(volume_path),
+                        "contentHash": f"sha256:{digest}",
+                    },
+                    "shape": [4, 4, 4],
+                    "dtype": "float32",
+                }
+            }
 
     before = set(studio.objects)
-    solver._result = object()
-    monkeypatch.setattr(
-        solve_mod.SliceExtractor,
-        "volume",
-        staticmethod(lambda result, **kwargs: np.ones((4, 4, 4), dtype=np.float32)),
-    )
+    monkeypatch.setattr(solver_mod, "api", type("FakeApi", (), {"solvers": FakeSolvers()})())
+
     msg = solver.show_volume()
 
     assert msg == "Volume updated"
     assert set(studio.objects) == before
     assert solver._volume_data is not None
     assert str(solver.render_mode) == "Volume"
+
+
+def test_maxwell_volume_result_ref_rejects_hash_mismatch(tmp_path):
+    import wt_maxwell.components.solver as solver_mod
+
+    volume_path = tmp_path / "volume.npy"
+    np.save(volume_path, np.ones((2, 2, 2), dtype=np.float32), allow_pickle=False)
+
+    class FakeSolvers:
+        def read_result_ref(self, solver_id, ref):
+            assert solver_id == "witwin.maxwell.fdtd"
+            raise ValueError("resultRef content hash mismatch")
+
+    old_api = solver_mod.api
+    solver_mod.api = type("FakeApi", (), {"solvers": FakeSolvers()})()
+    with pytest.raises(ValueError, match="content hash mismatch"):
+        try:
+            solver_mod.MaxwellSolverComponent._load_volume_payload({
+                "resultRef": {
+                    "kind": "npy",
+                    "path": str(volume_path),
+                    "contentHash": f"sha256:{'0' * 64}",
+                },
+                "shape": [2, 2, 2],
+            })
+        finally:
+            solver_mod.api = old_api
+
+
+def test_maxwell_volume_result_ref_requires_sha256(tmp_path):
+    import wt_maxwell.components.solver as solver_mod
+
+    volume_path = tmp_path / "volume.npy"
+    np.save(volume_path, np.ones((2, 2, 2), dtype=np.float32), allow_pickle=False)
+
+    with pytest.raises(ValueError, match="contentHash"):
+        solver_mod.MaxwellSolverComponent._load_volume_payload({
+            "resultRef": {
+                "kind": "npy",
+                "path": str(volume_path),
+            },
+            "shape": [2, 2, 2],
+        })
+
+
+def test_maxwell_volume_result_ref_uses_solver_api_loader_for_path_confinement(tmp_path):
+    import wt_maxwell.components.solver as solver_mod
+
+    volume_path = tmp_path / "volume.npy"
+    np.save(volume_path, np.ones((2, 2, 2), dtype=np.float32), allow_pickle=False)
+    digest = hashlib.sha256(volume_path.read_bytes()).hexdigest()
+
+    class FakeSolvers:
+        def read_result_ref(self, solver_id, ref):
+            assert solver_id == "witwin.maxwell.fdtd"
+            raise ValueError("resultRef path must stay inside solver result directory")
+
+    old_api = solver_mod.api
+    solver_mod.api = type("FakeApi", (), {"solvers": FakeSolvers()})()
+    with pytest.raises(ValueError, match="resultRef path"):
+        try:
+            solver_mod.MaxwellSolverComponent._load_volume_payload({
+                "resultRef": {
+                    "kind": "npy",
+                    "path": str(volume_path),
+                    "contentHash": f"sha256:{digest}",
+                },
+                "shape": [2, 2, 2],
+            })
+        finally:
+            solver_mod.api = old_api
+
+
+def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatch):
+    import wt_maxwell.components.solver as solver_mod
+
+    scene = _scene(device)
+    studio = adapter.to_studio(scene)
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.frequencies = [1e9]
+    solver.show_3d_field = False
+
+    class FakeRun:
+        status = "succeeded"
+        outputs = {"resultHandle": "handle-1"}
+        run_id = "run-1"
+        error = None
+
+    class FakeSolvers:
+        def __init__(self):
+            self.solve_kwargs = None
+            self.queries = []
+
+        def solve(self, solver_id, **kwargs):
+            self.solve_kwargs = {"solver_id": solver_id, **kwargs}
+            return FakeRun()
+
+        def query(self, solver_id, result_handle, op, params, **kwargs):
+            self.queries.append((solver_id, result_handle, op, params, kwargs))
+            return {
+                "data": {
+                    "data": [[1.0, 2.0], [3.0, 4.0]],
+                    "extent": [-1.0, 1.0, -1.0, 1.0],
+                    "xlabel": "x",
+                    "ylabel": "y",
+                }
+            }
+
+    fake = FakeSolvers()
+    monkeypatch.setattr(solver_mod, "api", type("FakeApi", (), {"solvers": fake})())
+
+    msg = solver.solve()
+
+    assert msg == "Solve complete"
+    assert solver._solver_result_handle == "handle-1"
+    assert fake.solve_kwargs["solver_id"] == "witwin.maxwell.fdtd"
+    assert fake.solve_kwargs["scene"] is studio
+    assert fake.solve_kwargs["surface_progress"] is True
+    assert fake.queries[0][2] == "extract_slice"

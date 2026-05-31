@@ -6,9 +6,13 @@ as foldout groups on the Maxwell Settings object. The component subclasses the
 core Field component so solved field data is written back onto the solver itself
 via ``set_volume_data`` instead of creating a separate field object.
 """
-import numpy as np
+import io
 
-from witwin_server import Notifications
+import numpy as np
+from dataclasses import asdict
+
+from witwin_server import Notifications, SceneObject
+from witwin_server.api import api
 from witwin_server.core.components import (
     bool_field,
     button,
@@ -27,7 +31,7 @@ from witwin_server.core.components.field_region import FieldComponent
 
 from ..adapter.common import num
 from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, resolution_from_bounds
-from ..adapter.solve import SliceExtractor, SolveConfig, SolveRunner
+from ..adapter.solve import SolveConfig
 
 BOUNDARY_KINDS = ["none", "pml", "periodic", "bloch", "pec", "pmc"]
 SYMMETRY_KINDS = ["none", "PEC", "PMC"]
@@ -46,7 +50,8 @@ _FDTD = {"field_name": "method", "operator": "eq", "value": "fdtd"}
 class MaxwellSolverComponent(FieldComponent):
     """Maxwell scene configuration, solve controls, and field visualization."""
 
-    _result = None
+    _solver_result_handle = ""
+    _solver_run_id = ""
 
     define_group(foldout_group(_DOMAIN, display_name="Domain"))
     define_group(foldout_group(_GRID, display_name="Grid"))
@@ -157,7 +162,22 @@ class MaxwellSolverComponent(FieldComponent):
         if config is None:
             return "No solve frequencies set"
         self._ensure_default_source()
-        self._result = SolveRunner.run(self._owner.scene, config)
+        run = api.solvers.solve(
+            "witwin.maxwell.fdtd",
+            scene=self._owner.scene,
+            config=asdict(config),
+            surface_progress=True,
+        )
+        if run.status != "succeeded":
+            message = (run.error or {}).get("message") or "solve failed"
+            Notifications.error("Maxwell", message)
+            return f"Solve failed: {message}"
+        handle = (run.outputs or {}).get("resultHandle")
+        if not handle:
+            Notifications.error("Maxwell", "Solver returned no result handle")
+            return "Solve failed: no result handle"
+        self._solver_result_handle = str(handle)
+        self._solver_run_id = run.run_id
         self.update_slice()
         if bool(self.show_3d_field):
             self.show_volume()
@@ -166,30 +186,64 @@ class MaxwellSolverComponent(FieldComponent):
 
     @button(display_name="Update Slice", group=_RESULTS)
     def update_slice(self):
-        if self._result is None:
+        if not self._solver_result_handle:
             return "Solve first"
-        sl = SliceExtractor.extract(
-            self._result, axis=str(self.slice_axis), position=float(num(self.slice_position)),
-            component=str(self.component), value_mode=str(self.value_mode),
-            freq_index=int(self.frequency_index), log_scale=bool(self.log_scale))
-        self.slice_figure.clear().imshow(sl.data).title(f"{self.component} ({self.value_mode})")
+        sl = self._query_result("extract_slice", {
+            "axis": str(self.slice_axis),
+            "position": float(num(self.slice_position)),
+            "component": str(self.component),
+            "value_mode": str(self.value_mode),
+            "freq_index": int(self.frequency_index),
+            "log_scale": bool(self.log_scale),
+        })
+        data = np.asarray(sl["data"], dtype=np.float32)
+        self.slice_figure.clear().imshow(data).title(f"{self.component} ({self.value_mode})")
         return "Slice updated"
 
     @button(display_name="Show 3D Volume", group=_RESULTS)
     def show_volume(self):
-        if self._result is None:
+        if not self._solver_result_handle:
             return "Solve first"
-        vol = SliceExtractor.volume(self._result, component=str(self.component),
-                                    value_mode=str(self.value_mode), freq_index=int(self.frequency_index))
+        payload = self._query_result("extract_volume", {
+            "component": str(self.component),
+            "value_mode": str(self.value_mode),
+            "freq_index": int(self.frequency_index),
+        })
+        vol = self._load_volume_payload(payload)
         self._sync_field_bounds()
         self.set_volume_data(np.asarray(vol, dtype=np.float32))
         self.set_field("render_mode", "Volume", force=True)
         self.export_volume_data()
         return "Volume updated"
 
+    def _query_result(self, op: str, params: dict):
+        response = api.solvers.query(
+            "witwin.maxwell.fdtd",
+            self._solver_result_handle,
+            op,
+            params,
+            run_id=self._solver_run_id or None,
+        )
+        return response.get("data") or {}
+
+    @staticmethod
+    def _load_volume_payload(payload: dict) -> np.ndarray:
+        ref = payload.get("resultRef")
+        if not isinstance(ref, dict) or not ref.get("path"):
+            raise ValueError("Maxwell volume query did not return a resultRef")
+        expected = str(ref.get("contentHash") or "")
+        if not expected.startswith("sha256:") or len(expected.split(":", 1)[1]) != 64:
+            raise ValueError("Maxwell volume resultRef contentHash must be sha256")
+        raw = api.solvers.read_result_ref("witwin.maxwell.fdtd", ref)
+        volume = np.load(io.BytesIO(raw), allow_pickle=False)
+        shape = payload.get("shape")
+        if shape:
+            volume = volume.reshape(tuple(int(v) for v in shape))
+        return np.asarray(volume, dtype=np.float32)
+
     def _ensure_default_source(self) -> bool:
         """Create a small FDTD-compatible point source if the scene has none."""
-        from ..adapter.source_map import SOURCE_COMPONENTS, SourceMap
+        from ..adapter.source_map import SOURCE_COMPONENTS
 
         scene = self._owner.scene if self._owner else None
         if scene is None:
@@ -198,16 +252,15 @@ class MaxwellSolverComponent(FieldComponent):
             if any(obj.get_component(name) is not None for name in SOURCE_COMPONENTS):
                 return False
 
-        import witwin.maxwell as mw
-
         frequency = next((num(f) for f in self.frequencies), 1e9)
-        source = mw.PointDipole(
-            position=(0.0, 0.0, 0.0),
-            polarization="Ez",
-            source_time=mw.GaussianPulse(frequency=frequency, fwidth=frequency * 0.2),
-            name="Default FDTD Source",
-        )
-        scene.add_object(SourceMap.to_studio(source))
+        source = SceneObject(name="Default FDTD Source", mesh_type="Empty")
+        comp = source.add_component("PointDipoleSource")
+        if comp is not None:
+            comp.polarization_mode = "Ez"
+            comp.st_kind = "gaussian_pulse"
+            comp.st_frequency = frequency
+            comp.st_fwidth = frequency * 0.2
+        scene.add_object(source)
         return True
 
     def _solve_config(self):
