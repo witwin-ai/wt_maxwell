@@ -13,7 +13,7 @@
         "id": "witwin.maxwell.fdtd",
         "title": "Maxwell FDTD",
         "entry": "solver_host.py",
-        "runtime": { "python": "${env:WITWIN_MAXWELL_PYTHON}" },
+        "runtime": { "python": "${backend:python}" },
         "lifecycle": "warm",
         "idleTimeoutSec": 300,
         "cancelGraceSec": 5,
