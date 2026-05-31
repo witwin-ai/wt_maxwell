@@ -26,6 +26,7 @@ from witwin_server.core.components import (
 from witwin_server.core.components.field_region import FieldComponent
 
 from ..adapter.common import num
+from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, resolution_from_bounds
 from ..adapter.solve import SliceExtractor, SolveConfig, SolveRunner
 
 BOUNDARY_KINDS = ["none", "pml", "periodic", "bloch", "pec", "pmc"]
@@ -59,29 +60,32 @@ class MaxwellSolverComponent(FieldComponent):
                                "SDF": {"field_name": "dimension", "operator": "eq", "value": "3D"},
                            }))
 
-    # FieldComponent state used by the viewport visualizer. Maxwell exposes its
-    # own domain/result controls, so these inherited controls stay internal.
+    # FieldComponent state used by the viewport visualizer. ``min_bound`` and
+    # ``max_bound`` are also the Maxwell domain source because Field gizmos edit
+    # these inherited fields directly.
     dimension = string_field("3D", options=["2D", "3D"], hidden=True)
     plane = string_field("XZ", options=["XY", "XZ", "YZ"], hidden=True)
     frequency_dependent_resolution = bool_field(False, hidden=True)
     frequency = float_field(1e9, hidden=True)
-    min_bound = vector3_field([-1.0, -1.0, -1.0], hidden=True)
-    max_bound = vector3_field([1.0, 1.0, 1.0], hidden=True)
+    min_bound = vector3_field([-1.0, -1.0, -1.0], description="Domain min corner (m)", group=_DOMAIN)
+    max_bound = vector3_field([1.0, 1.0, 1.0], description="Domain max corner (m)", group=_DOMAIN)
     resolution = vector3_field([1.0, 1.0, 1.0], hidden=True)
     render_mode = string_field("None", options=["None", "Slices", "Volume", "SDF", "Vector"], hidden=True)
     cache_in_memory = bool_field(True, hidden=True)
     volume_id = string_field("", hidden=True)
 
-    # Domain.
-    bounds_min = vector3_field([-1.0, -1.0, -1.0], description="Domain min corner (m)", group=_DOMAIN)
-    bounds_max = vector3_field([1.0, 1.0, 1.0], description="Domain max corner (m)", group=_DOMAIN)
+    # Legacy aliases kept for old serialized scenes and plugin versions.
+    bounds_min = vector3_field([-1.0, -1.0, -1.0], hidden=True)
+    bounds_max = vector3_field([1.0, 1.0, 1.0], hidden=True)
 
     # Grid.
-    uniform = bool_field(True, description="Use a single spacing for all axes", group=_GRID)
-    dl = float_field(0.05, min=1e-9, show_if="uniform", description="Uniform cell size (m)", group=_GRID)
-    dx = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along x (m)", group=_GRID)
-    dy = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along y (m)", group=_GRID)
-    dz = float_field(0.05, min=1e-9, hide_if="uniform", description="Cell size along z (m)", group=_GRID)
+    ppw = string_field("10", options=PPW_OPTIONS, widget="stepped-slider",
+                       description="Points per wavelength", group=_GRID)
+    uniform = bool_field(True, hidden=True)
+    dl = float_field(0.05, min=1e-9, hidden=True)
+    dx = float_field(0.05, min=1e-9, hidden=True)
+    dy = float_field(0.05, min=1e-9, hidden=True)
+    dz = float_field(0.05, min=1e-9, hidden=True)
 
     # Boundary.
     mode = string_field("global", options=["global", "per_axis", "per_face"],
@@ -219,14 +223,21 @@ class MaxwellSolverComponent(FieldComponent):
             full_field_dft=True,
             time_steps=None if bool(self.time_steps_auto) else int(self.time_steps))
 
-    def _sync_field_bounds(self) -> None:
-        offset = [0.0, 0.0, 0.0]
-        if self._owner is not None:
-            from witwin_server.utils.mitsuba_utils import get_world_transform
+    def set_field(self, field_name: str, value, *, silent: bool = False, force: bool = False):
+        super().set_field(field_name, value, silent=silent, force=force)
+        if field_name == "bounds_min":
+            super().set_field("min_bound", value, silent=silent, force=True)
+        elif field_name == "bounds_max":
+            super().set_field("max_bound", value, silent=silent, force=True)
+        if field_name in ("min_bound", "max_bound", "bounds_min", "bounds_max", "ppw", "frequencies", "frequency"):
+            self._sync_field_bounds()
 
-            world = get_world_transform(self._owner)
-            offset = [float(world[i, 3]) for i in range(3)]
-        bounds_min = [float(num(v)) + offset[i] for i, v in enumerate(self.bounds_min)]
-        bounds_max = [float(num(v)) + offset[i] for i, v in enumerate(self.bounds_max)]
-        self.set_field("min_bound", bounds_min, silent=True, force=True)
-        self.set_field("max_bound", bounds_max, silent=True, force=True)
+    def _sync_field_bounds(self) -> None:
+        bounds_min = [float(num(v)) for v in self.min_bound]
+        bounds_max = [float(num(v)) for v in self.max_bound]
+        cell_size = grid_cell_size(self)
+        resolution = resolution_from_bounds(bounds_min, bounds_max, cell_size)
+        super().set_field("bounds_min", bounds_min, silent=True, force=True)
+        super().set_field("bounds_max", bounds_max, silent=True, force=True)
+        super().set_field("frequency", grid_frequency(self), silent=True, force=True)
+        super().set_field("resolution", resolution, silent=True, force=True)

@@ -11,6 +11,8 @@ from typing import Any, List, Optional, Tuple
 from witwin_server import SceneObject
 from witwin_server.utils.mitsuba_utils import get_world_transform
 
+from .grid import SPEED_OF_LIGHT, grid_cell_size, grid_frequency, quantize_ppw
+
 SETTINGS_NAME = "Maxwell Settings"
 MARKER_COMPONENT = "MaxwellSolver"
 LEGACY_MARKER_COMPONENT = "MaxwellDomain"
@@ -81,14 +83,14 @@ class SettingsMap:
     @staticmethod
     def _read_domain(comp: Any, domain: Any) -> None:
         bounds = domain.bounds
-        comp.bounds_min = [float(bounds[i][0]) for i in range(3)]
-        comp.bounds_max = [float(bounds[i][1]) for i in range(3)]
+        comp.min_bound = [float(bounds[i][0]) for i in range(3)]
+        comp.max_bound = [float(bounds[i][1]) for i in range(3)]
         if hasattr(comp, "_sync_field_bounds"):
             comp._sync_field_bounds()
 
     @staticmethod
     def _build_domain(mw: Any, comp: Any) -> Any:
-        lo, hi = _vec3(comp.bounds_min), _vec3(comp.bounds_max)
+        lo, hi = _vec3(comp.min_bound), _vec3(comp.max_bound)
         owner = getattr(comp, "_owner", None)
         offset = [0.0, 0.0, 0.0]
         if owner is not None:
@@ -102,18 +104,21 @@ class SettingsMap:
 
     @staticmethod
     def _read_grid(comp: Any, grid: Any) -> None:
+        spacing = [float(grid.dx), float(grid.dy), float(grid.dz)]
         if grid.is_uniform:
             comp.uniform = True
             comp.dl = float(grid.dx)
         else:
             comp.uniform = False
             comp.dx, comp.dy, comp.dz = float(grid.dx), float(grid.dy), float(grid.dz)
+        finest_spacing = min(v for v in spacing if v > 0.0)
+        comp.ppw = str(quantize_ppw(SPEED_OF_LIGHT / grid_frequency(comp) / finest_spacing))
+        if hasattr(comp, "_sync_field_bounds"):
+            comp._sync_field_bounds()
 
     @staticmethod
     def _build_grid(mw: Any, comp: Any) -> Any:
-        if bool(comp.uniform):
-            return mw.GridSpec.uniform(_f(comp.dl))
-        return mw.GridSpec.anisotropic(_f(comp.dx), _f(comp.dy), _f(comp.dz))
+        return mw.GridSpec.uniform(grid_cell_size(comp))
 
     # --- boundary ------------------------------------------------------------
 

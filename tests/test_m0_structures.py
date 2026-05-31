@@ -4,6 +4,8 @@ Builds a ``maxwell.Scene`` with three primitives + scalar materials + a domain /
 grid / PML boundary, runs it through ``to_studio`` then ``to_platform``, and
 asserts the rebuilt scene reproduces the config and every structure.
 """
+import math
+
 import witwin.maxwell as mw
 from witwin_server.core.components import PlatformGeometryComponent
 from witwin_server import SceneObject
@@ -14,7 +16,7 @@ from _helpers import approx, assert_config_equal
 def _build_scene() -> "mw.Scene":
     scene = mw.Scene(
         domain=mw.Domain(bounds=((-0.5, 0.6), (-0.4, 0.5), (-0.3, 0.7))),
-        grid=mw.GridSpec.uniform(0.05),
+        grid=mw.GridSpec.uniform(299792458.0 / 1e9 / 6.0),
         boundary=mw.BoundarySpec.pml(num_layers=12, strength=5e5),
         subpixel_samples=2,
         symmetry=("PEC", None, None),
@@ -58,6 +60,24 @@ def test_solver_transform_offsets_domain_bounds(adapter):
         assert approx(got_axis[1], expected_axis[1])
 
 
+def test_field_gizmo_bounds_drive_domain_export(adapter):
+    original = _build_scene().clone(structures=[])
+    studio = adapter.to_studio(original)
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.bounds_min = [-9.0, -9.0, -9.0]
+    solver.bounds_max = [9.0, 9.0, 9.0]
+    solver.min_bound = [-0.2, -0.3, -0.4]
+    solver.max_bound = [0.5, 0.6, 0.7]
+
+    rebuilt = adapter.to_platform(studio)
+
+    expected = ((-0.2, 0.5), (-0.3, 0.6), (-0.4, 0.7))
+    for got_axis, expected_axis in zip(rebuilt.domain.bounds, expected):
+        assert approx(got_axis[0], expected_axis[0])
+        assert approx(got_axis[1], expected_axis[1])
+
+
 def test_settings_object_uses_single_maxwell_solver_component(adapter):
     original = _build_scene()
     studio = adapter.to_studio(original)
@@ -77,11 +97,14 @@ def test_maxwell_solver_is_fdtd_only_and_renders_last(wtm):
     definition = MaxwellSolverComponent.get_definition()
     method = next(field for field in definition["fields"] if field["name"] == "method")
     full_field_dft = next(field for field in definition["fields"] if field["name"] == "full_field_dft")
+    ppw = next(field for field in definition["fields"] if field["name"] == "ppw")
     groups = definition["groups"]
 
     assert method["widget"]["options"] == ["fdtd"]
     assert method["hidden"] is True
     assert full_field_dft["hidden"] is True
+    assert ppw["widget"]["widget_type"] == "stepped-slider"
+    assert ppw["widget"]["options"] == [str(i) for i in range(4, 21)]
     assert groups[-1]["name"] == "Renderer"
     assert groups[-1]["display_name"] == "Rendering"
 
@@ -204,10 +227,45 @@ def test_scaled_imported_structure_exports_visual_world_mesh(adapter):
         assert approx(got_axis[1], expected_axis[1])
 
 
-def test_anisotropic_grid_round_trip(adapter):
+def test_anisotropic_grid_import_quantizes_to_ppw_step(adapter):
     original = _build_scene().clone(grid=mw.GridSpec.anisotropic(0.04, 0.05, 0.06))
-    rebuilt = adapter.to_platform(adapter.to_studio(original))
-    assert_config_equal(original, rebuilt)
+    studio = adapter.to_studio(original)
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    rebuilt = adapter.to_platform(studio)
+
+    expected_ppw = "7"
+    expected_dl = 299792458.0 / 1e9 / float(expected_ppw)
+
+    assert str(solver.ppw) == expected_ppw
+    assert rebuilt.grid.is_uniform is True
+    assert all(approx(v, expected_dl) for v in rebuilt.grid.spacing)
+
+
+def test_ppw_grid_uses_shortest_wavelength_and_non_cubic_resolution(adapter):
+    original = _build_scene().clone(
+        structures=[],
+        domain=mw.Domain(bounds=((0.0, 0.3), (0.0, 0.6), (0.0, 0.9))),
+    )
+    studio = adapter.to_studio(original)
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.frequencies = [1e9, 2e9]
+    solver.ppw = "12"
+
+    solver._sync_field_bounds()
+    rebuilt = adapter.to_platform(studio)
+
+    expected_dl = 299792458.0 / 2e9 / 12.0
+    assert rebuilt.grid.is_uniform is True
+    assert all(approx(v, expected_dl) for v in rebuilt.grid.spacing)
+    expected_resolution = [
+        math.ceil(0.3 / expected_dl),
+        math.ceil(0.6 / expected_dl),
+        math.ceil(0.9 / expected_dl),
+    ]
+    resolution = solver.resolution.tolist() if hasattr(solver.resolution, "tolist") else solver.resolution
+    assert [int(v) for v in resolution] == expected_resolution
 
 
 def test_per_face_boundary_round_trip(adapter):
