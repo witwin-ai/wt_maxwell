@@ -166,7 +166,6 @@ class MaxwellSolverComponent(FieldComponent):
             "witwin.maxwell.fdtd",
             scene=self._owner.scene,
             config=asdict(config),
-            surface_progress=True,
         )
         if run.status != "succeeded":
             message = (run.error or {}).get("message") or "solve failed"

@@ -245,7 +245,19 @@ def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatc
             }
 
     fake = FakeSolvers()
+    notifications = {"success": [], "error": []}
+
+    class FakeNotifications:
+        @staticmethod
+        def success(title, message):
+            notifications["success"].append((title, message))
+
+        @staticmethod
+        def error(title, message):
+            notifications["error"].append((title, message))
+
     monkeypatch.setattr(solver_mod, "api", type("FakeApi", (), {"solvers": fake})())
+    monkeypatch.setattr(solver_mod, "Notifications", FakeNotifications)
 
     msg = solver.solve()
 
@@ -253,5 +265,7 @@ def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatc
     assert solver._solver_result_handle == "handle-1"
     assert fake.solve_kwargs["solver_id"] == "witwin.maxwell.fdtd"
     assert fake.solve_kwargs["scene"] is studio
-    assert fake.solve_kwargs["surface_progress"] is True
+    assert "surface_progress" not in fake.solve_kwargs
     assert fake.queries[0][2] == "extract_slice"
+    assert notifications["success"] == [("Maxwell", "FDTD solve complete")]
+    assert notifications["error"] == []
