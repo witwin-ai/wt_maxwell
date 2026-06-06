@@ -30,7 +30,7 @@ base-layer code it reads/writes.
 
 ```
 wt-maxwell/
-├── witwin.manifest.json   # plugin metadata + deps
+├── witwin.toml   # plugin metadata + deps
 ├── __init__.py            # registers components + the maxwell adapter (eager)
 ├── components/            # maxwell scene components (auto-registered)
 │   └── solver.py          # Maxwell Solver single component

@@ -7,6 +7,7 @@ core Field component so solved field data is written back onto the solver itself
 via ``set_volume_data`` instead of creating a separate field object.
 """
 import io
+import asyncio
 
 import numpy as np
 from dataclasses import asdict
@@ -77,7 +78,6 @@ class MaxwellSolverComponent(FieldComponent):
     resolution = vector3_field([1.0, 1.0, 1.0], hidden=True)
     render_mode = string_field("None", options=["None", "Slices", "Volume", "SDF", "Vector"], hidden=True)
     cache_in_memory = bool_field(True, hidden=True)
-    volume_id = string_field("", hidden=True)
 
     # Legacy aliases kept for old serialized scenes and plugin versions.
     bounds_min = vector3_field([-1.0, -1.0, -1.0], hidden=True)
@@ -156,13 +156,25 @@ class MaxwellSolverComponent(FieldComponent):
     show_3d_field = bool_field(True, description="Update this solver's 3D field volume after solving", group=_RESULTS)
     slice_figure = figure(title="Field Slice", group=_RESULTS)
 
-    @button(display_name="Solve", group=_RESULTS)
+    @button(display_name="Solve", group=_RESULTS, operation="solver", cancellable=True,
+            progress_surface="component")
     def solve(self):
+        async def _run():
+            return await self._solve_async()
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(_run())
+        return _run()
+
+    async def _solve_async(self):
         config = self._solve_config()
         if config is None:
             return "No solve frequencies set"
         self._ensure_default_source()
-        run = api.solvers.solve(
+        run = await asyncio.to_thread(
+            api.solvers.solve,
             "witwin.maxwell.fdtd",
             scene=self._owner.scene,
             config=asdict(config),

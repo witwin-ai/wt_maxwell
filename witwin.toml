@@ -1,0 +1,29 @@
+id = "witwin.maxwell"
+name = "Maxwell (FDTD)"
+version = "0.1.0"
+author = ""
+description = "Round-trips witwin.maxwell solver scenes <-> the studio editor (materials, sources, monitors, ports, boundaries) and runs FDTD with 2D slice / 3D volume field visualization."
+license = "GPL-3.0-or-later"
+dependencies = ["scipy", "numpy"]
+icon = "waves"
+enabled = true
+
+[engines]
+witwin = "^1.0.0"
+
+[[contributes.solvers]]
+id = "witwin.maxwell.fdtd"
+title = "Maxwell FDTD"
+entry = "solver_host.py"
+lifecycle = "warm"
+idleTimeoutSec = 300
+cancelGraceSec = 5
+maxParallel = 1
+
+[contributes.solvers.runtime]
+python = "${backend:python}"
+
+[contributes.solvers.capabilities]
+cancel = true
+partials = true
+query = ["extract_slice", "extract_volume"]
