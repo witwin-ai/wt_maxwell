@@ -81,6 +81,7 @@ def test_slice_log_scale(adapter, solve_mod, device, solver_ready):
 
 
 def test_show_3d_volume_registers_object():
+    import wt_volume.components.volume  # noqa: F401
     from witwin_server import Scene
     from witwin_server.features.platform.bridge import FieldViz
 
