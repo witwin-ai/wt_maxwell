@@ -9,6 +9,9 @@ figure surface; 3D volumes are written back onto the solver's own Field surface.
 Result tensors are runtime state — never serialized into the scene.
 """
 from dataclasses import dataclass
+import os
+from pathlib import Path
+import sys
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
@@ -55,8 +58,115 @@ class SolveRunner:
     @staticmethod
     def run(studio_scene: Any, config: SolveConfig) -> Any:
         """Rebuild the platform scene from the studio scene and run the solve."""
+        _ensure_mesh_sdf_slang_ready()
         platform_scene = MaxwellAdapter().to_platform(studio_scene)
         return SolveRunner.build(platform_scene, config).run()
+
+
+def _ensure_mesh_sdf_slang_ready() -> None:
+    """Expose runtime paths and fail early if the Slang mesh SDF module is absent."""
+    try:
+        from witwin.core.geometry import mesh_sdf
+    except Exception:
+        return
+
+    _ensure_mesh_sdf_runtime_env()
+    if mesh_sdf._slang_mesh_sdf_available():
+        return
+    raise RuntimeError(
+        "Mesh SDF Slang module is not available. "
+        + _mesh_sdf_slang_diagnostics(mesh_sdf)
+    )
+
+
+def _ensure_mesh_sdf_runtime_env() -> None:
+    """Expose conda/CUDA paths SlangTorch needs for mesh SDF JIT/linking."""
+    env_prefix = Path(sys.executable).resolve().parent
+    if (env_prefix / "python.exe").exists():
+        conda_prefix = env_prefix
+    else:
+        conda_prefix = Path(os.environ.get("CONDA_PREFIX", env_prefix))
+
+    cuda_root = os.environ.get("CUDA_PATH")
+    if not cuda_root:
+        candidates = sorted(
+            Path("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA").glob("v*"),
+            reverse=True,
+        )
+        if candidates:
+            cuda_root = str(candidates[0])
+            os.environ["CUDA_PATH"] = cuda_root
+
+    def prepend_env(name: str, entries: list[Path]) -> None:
+        current = os.environ.get(name, "")
+        parts = [part for part in current.split(os.pathsep) if part]
+        seen = {os.path.normcase(part) for part in parts}
+        prefix: list[str] = []
+        for entry in entries:
+            if not entry.exists():
+                continue
+            text = str(entry)
+            key = os.path.normcase(text)
+            if key in seen:
+                continue
+            prefix.append(text)
+            seen.add(key)
+        if prefix:
+            os.environ[name] = os.pathsep.join(prefix + parts)
+
+    path_entries = [
+        conda_prefix,
+        conda_prefix / "Library" / "bin",
+        conda_prefix / "Scripts",
+    ]
+    lib_entries = [conda_prefix / "Library" / "lib"]
+    include_entries = [conda_prefix / "Library" / "include"]
+    if cuda_root:
+        cuda_path = Path(cuda_root)
+        path_entries.append(cuda_path / "bin")
+        lib_entries.append(cuda_path / "lib" / "x64")
+        include_entries.append(cuda_path / "include")
+
+    prepend_env("PATH", path_entries)
+    prepend_env("LIB", lib_entries)
+    prepend_env("INCLUDE", include_entries)
+
+
+def _mesh_sdf_slang_diagnostics(mesh_sdf: Any) -> str:
+    details: list[str] = []
+    lib_has_conda = _env_contains("LIB", "Library" + os.sep + "lib")
+    try:
+        slang_path = Path(mesh_sdf.__file__).resolve().parents[1] / "mesh_sdf.slang"
+    except Exception:
+        slang_path = None
+
+    details.append(f"python={sys.executable}")
+    details.append(f"cuda_path={os.environ.get('CUDA_PATH', '')}")
+    details.append(f"lib_has_conda={lib_has_conda}")
+    details.append(f"path_has_cuda={_env_contains('PATH', 'CUDA')}")
+    if slang_path is not None:
+        details.append(f"slang_path={slang_path}")
+        details.append(f"slang_exists={slang_path.exists()}")
+        cache_root = slang_path.parent / ".slangtorch_cache" / "mesh_sdf"
+        locks = list(cache_root.rglob("*.lock")) if cache_root.exists() else []
+        pyds = list(cache_root.rglob("*.pyd")) if cache_root.exists() else []
+        details.append(f"lock_count={len(locks)}")
+        details.append(f"pyd_count={len(pyds)}")
+
+    if os.environ.get("WT_MAXWELL_MESH_SDF_DIAGNOSE_LOAD") == "1":
+        try:
+            import slangtorch
+
+            module = slangtorch.loadModule(str(slang_path)) if slang_path is not None else None
+            details.append(f"direct_load={module is not None}")
+        except Exception as exc:
+            details.append(f"direct_load_error={type(exc).__name__}: {str(exc)[:1000]}")
+    return "; ".join(details)
+
+
+def _env_contains(name: str, needle: str) -> bool:
+    value = os.environ.get(name, "")
+    return needle.lower() in value.lower()
 
 
 class SliceExtractor:

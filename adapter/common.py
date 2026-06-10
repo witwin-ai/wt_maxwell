@@ -1,6 +1,8 @@
 """Small shared conversion helpers for the maxwell adapter maps."""
 from typing import Any, List, Optional, Tuple
 
+import numpy as np
+
 TOL = 1e-6
 _AXIS_VECTORS = {"Ex": (1.0, 0.0, 0.0), "Ey": (0.0, 1.0, 0.0), "Ez": (0.0, 0.0, 1.0)}
 _LETTER_TO_FIELD = {"x": "Ex", "y": "Ey", "z": "Ez"}
@@ -41,3 +43,20 @@ def freqs_to_platform(values: Any) -> Optional[tuple]:
     """Component frequency list -> platform tuple, or None when empty (broadband)."""
     out = tuple(num(v) for v in (values or []))
     return out or None
+
+
+def render_mesh_arrays(obj: Any) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    """Return the mesh surface that solver export should see."""
+    mesh = obj.get_component("Mesh")
+    if mesh is None or mesh.is_empty:
+        return None
+
+    compute_skinned = getattr(mesh, "compute_skinned_vertices_numpy", None)
+    vertices = compute_skinned() if callable(compute_skinned) else mesh.get_vertices_numpy()
+    faces = mesh.get_faces_numpy()
+
+    vertices = np.asarray(vertices, dtype=np.float32).reshape(-1, 3)
+    faces = np.asarray(faces, dtype=np.int64).reshape(-1, 3)
+    if vertices.size == 0 or faces.size == 0:
+        return None
+    return vertices, faces

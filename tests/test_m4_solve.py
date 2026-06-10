@@ -6,6 +6,7 @@ checks the 2D slice extraction and the 3D viewport volume registration. The whol
 suite skips (needs-user-verification) if the solver can't run in this environment.
 """
 import hashlib
+import os
 
 import witwin.maxwell as mw
 import numpy as np
@@ -218,6 +219,13 @@ def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatc
     solver = settings.get_component("MaxwellSolver")
     solver.frequencies = [1e9]
     solver.show_3d_field = False
+    timeline_calls = []
+
+    class FakeTimelineManager:
+        def apply_to_scene(self):
+            timeline_calls.append("apply")
+
+    studio.timeline_manager = FakeTimelineManager()
 
     class FakeRun:
         status = "succeeded"
@@ -231,7 +239,7 @@ def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatc
             self.queries = []
 
         def solve(self, solver_id, **kwargs):
-            self.solve_kwargs = {"solver_id": solver_id, **kwargs}
+            self.solve_kwargs = {"solver_id": solver_id, "timeline_calls": list(timeline_calls), **kwargs}
             return FakeRun()
 
         def query(self, solver_id, result_handle, op, params, **kwargs):
@@ -265,8 +273,73 @@ def test_maxwell_component_uses_solver_api_for_solve(adapter, device, monkeypatc
     assert msg == "Solve complete"
     assert solver._solver_result_handle == "handle-1"
     assert fake.solve_kwargs["solver_id"] == "witwin.maxwell.fdtd"
+    assert fake.solve_kwargs["timeline_calls"] == ["apply"]
     assert fake.solve_kwargs["scene"] is studio
     assert "surface_progress" not in fake.solve_kwargs
     assert fake.queries[0][2] == "extract_slice"
     assert notifications["success"] == [("Maxwell", "FDTD solve complete")]
     assert notifications["error"] == []
+
+
+def test_mesh_sdf_runtime_env_adds_conda_and_cuda_paths(solve_mod, monkeypatch, tmp_path):
+    conda = tmp_path / "conda"
+    cuda = tmp_path / "cuda"
+    for path in (
+        conda / "Library" / "bin",
+        conda / "Library" / "lib",
+        conda / "Library" / "include",
+        conda / "Scripts",
+        cuda / "bin",
+        cuda / "lib" / "x64",
+        cuda / "include",
+    ):
+        path.mkdir(parents=True)
+    (conda / "python.exe").write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(solve_mod.sys, "executable", str(conda / "python.exe"))
+    monkeypatch.setenv("CUDA_PATH", str(cuda))
+    monkeypatch.setenv("PATH", "old-path")
+    monkeypatch.setenv("LIB", "old-lib")
+    monkeypatch.setenv("INCLUDE", "old-include")
+
+    solve_mod._ensure_mesh_sdf_runtime_env()
+
+    assert str(conda / "Library" / "bin") in os.environ["PATH"]
+    assert str(conda / "Library" / "lib") in os.environ["LIB"]
+    assert str(cuda / "lib" / "x64") in os.environ["LIB"]
+    assert str(cuda / "include") in os.environ["INCLUDE"]
+
+
+def test_mesh_sdf_slang_ready_adds_env_and_requires_available_module(solve_mod, monkeypatch):
+    from witwin.core.geometry import mesh_sdf
+
+    calls = []
+
+    def slang_available():
+        calls.append("probe")
+        return True
+
+    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
+    monkeypatch.setattr(mesh_sdf, "_slang_mesh_sdf_available", slang_available)
+
+    solve_mod._ensure_mesh_sdf_slang_ready()
+
+    assert calls == ["env", "probe"]
+
+
+def test_mesh_sdf_slang_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
+    from witwin.core.geometry import mesh_sdf
+
+    calls = []
+
+    def slang_unavailable():
+        calls.append("probe")
+        return False
+
+    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
+    monkeypatch.setattr(mesh_sdf, "_slang_mesh_sdf_available", slang_unavailable)
+
+    with pytest.raises(RuntimeError, match="Mesh SDF Slang module is not available"):
+        solve_mod._ensure_mesh_sdf_slang_ready()
+
+    assert calls == ["env", "probe"]

@@ -6,8 +6,11 @@ asserts the rebuilt scene reproduces the config and every structure.
 """
 import math
 
+import numpy as np
 import witwin.maxwell as mw
-from witwin_server.core.components import PlatformGeometryComponent
+from witwin_server.core.components import MaterialComponent, PlatformGeometryComponent, SkinnedMeshComponent
+from witwin_server.features.timeline import InterpolationType, TimelineManager
+from witwin_server.features.solvers.scene_ref import load_scene_ref, make_scene_ref
 from witwin_server import SceneObject
 
 from _helpers import approx, assert_config_equal
@@ -166,6 +169,97 @@ def test_plain_studio_mesh_exports_as_maxwell_structure(adapter):
     for got_axis, expected_axis in zip(structure.geometry.bounds_world, expected_bounds):
         assert approx(got_axis[0], expected_axis[0])
         assert approx(got_axis[1], expected_axis[1])
+
+
+def test_skinned_mesh_exports_posed_surface(adapter):
+    original = _build_scene().clone(structures=[])
+    studio = adapter.to_studio(original)
+    _add_posed_skinned_target(studio)
+
+    rebuilt = adapter.to_platform(studio)
+
+    assert len(rebuilt.structures) == 1
+    bounds = rebuilt.structures[0].geometry.bounds_world
+    assert approx(bounds[0][0], 1.0)
+    assert approx(bounds[0][1], 1.0)
+
+
+def test_scene_ref_skinned_mesh_prefers_runtime_skin_over_smpl_geometry(adapter):
+    original = _build_scene().clone(structures=[])
+    studio = adapter.to_studio(original)
+    body = _add_posed_skinned_target(studio)
+    geom = body.add_component(PlatformGeometryComponent())
+    geom.kind = "smpl"
+    geom.model_root = "E:/missing/smpl/body_models"
+
+    restored = load_scene_ref(make_scene_ref(studio))
+    rebuilt = adapter.to_platform(restored)
+
+    assert len(rebuilt.structures) == 1
+    bounds = rebuilt.structures[0].geometry.bounds_world
+    assert approx(bounds[0][0], 1.0)
+    assert approx(bounds[0][1], 1.0)
+
+
+def test_scene_ref_skinned_mesh_uses_timeline_current_pose_and_material(adapter):
+    original = _build_scene().clone(structures=[])
+    studio = adapter.to_studio(original)
+    body = _add_posed_skinned_target(studio)
+    skinned = body.get_component("SkinnedMesh")
+    bone = studio.get_object(skinned.bone_ids[0])
+    geom = body.add_component(PlatformGeometryComponent())
+    geom.kind = "smpl"
+    geom.model_root = "E:/missing/smpl/body_models"
+
+    timeline = TimelineManager(studio)
+    timeline.clip.duration = 1.0
+    timeline.record_keyframe(
+        bone.id, "Transform", "position", [1.0, 0.0, 0.0],
+        time=0.0, interpolation=InterpolationType.STEP)
+    timeline.record_keyframe(
+        bone.id, "Transform", "position", [2.0, 0.0, 0.0],
+        time=1.0, interpolation=InterpolationType.STEP)
+    timeline.set_time(1.0, apply_to_scene=True)
+
+    restored = load_scene_ref(make_scene_ref(studio))
+    rebuilt = adapter.to_platform(restored)
+
+    assert len(rebuilt.structures) == 1
+    structure = rebuilt.structures[0]
+    bounds = structure.geometry.bounds_world
+    assert approx(bounds[0][0], 2.0)
+    assert approx(bounds[0][1], 2.0)
+    assert approx(float(structure.material.eps_r.real), 6.5)
+    assert approx(float(structure.material.sigma_e), 0.25)
+
+
+def _add_posed_skinned_target(studio):
+    body = SceneObject(name="Skinned Target", mesh_type="Empty")
+    studio.add_object(body)
+    material = body.add_component(MaterialComponent())
+    material.eps_r = 6.5
+    material.sigma_e = 0.25
+
+    bone = SceneObject(name="Skinned Target Bone", mesh_type="Empty")
+    studio.add_object(bone)
+    studio.set_parent(bone.id, body.id, keep_local_transform=False)
+    bone.get_component("Transform").position = [1.0, 0.0, 0.0]
+
+    skinned = SkinnedMeshComponent()
+    body.add_component(skinned)
+    skinned.set_mesh_data(
+        np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=np.float32),
+        np.array([[0, 1, 2]], dtype=np.uint32),
+        notify=False,
+    )
+    skinned.set_skinning_data(
+        [bone.id],
+        np.zeros((3, 4), dtype=np.int64),
+        np.array([[1.0, 0.0, 0.0, 0.0]] * 3, dtype=np.float32),
+        np.eye(4, dtype=np.float32).reshape(1, 4, 4),
+        root_bone_id=bone.id,
+    )
+    return body
 
 
 def test_visible_mesh_takes_precedence_over_platform_geometry(adapter):

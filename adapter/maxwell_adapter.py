@@ -18,6 +18,7 @@ from witwin_server import Scene, SceneObject
 from witwin_server.features.platform.bridge import GeometryMap, MaterialMap, StructureMap, TransformMap
 from witwin_server.utils.mitsuba_utils import get_world_transform
 
+from .common import render_mesh_arrays
 from .material_adapter import MaterialAdapter
 from .monitor_map import MONITOR_COMPONENTS, MonitorMap
 from .port_map import PORT_COMPONENTS, PortMap
@@ -108,7 +109,7 @@ class MaxwellAdapter:
                 continue
 
             structure = None
-            if obj.get_component("Mesh") is not None:
+            if render_mesh_arrays(obj) is not None:
                 structure = self._mesh_to_platform_structure(mw, obj)
 
             if structure is None and obj.get_component("PlatformGeometry") is not None:
@@ -206,10 +207,9 @@ class MaxwellAdapter:
 
         vertices = faces = None
         if str(geom.kind) == "mesh":
-            mesh = obj.get_component("Mesh")
-            if mesh is not None and not mesh.is_empty:
-                vertices = mesh.get_vertices_numpy()
-                faces = mesh.get_faces_numpy()
+            mesh_arrays = render_mesh_arrays(obj)
+            if mesh_arrays is not None:
+                vertices, faces = mesh_arrays
         geometry = GeometryMap.to_platform(geom, position, rotation_quat,
                                            vertices=vertices, faces=faces)
         return MaxwellAdapter._structure_from_geometry(mw, obj, geometry)
@@ -273,12 +273,11 @@ class MaxwellAdapter:
         """
         import witwin.core as wc
 
-        mesh = obj.get_component("Mesh")
-        if mesh is None or mesh.is_empty:
+        mesh_arrays = render_mesh_arrays(obj)
+        if mesh_arrays is None:
             return None
 
-        vertices = np.asarray(mesh.get_vertices_numpy(), dtype=np.float32).reshape(-1, 3)
-        faces = np.asarray(mesh.get_faces_numpy(), dtype=np.int64).reshape(-1, 3)
+        vertices, faces = mesh_arrays
         position, rotation_quat, scale = MaxwellAdapter._world_transform_parts(obj)
 
         geometry = wc.Mesh(vertices, faces, position=position, rotation=rotation_quat,

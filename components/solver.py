@@ -173,6 +173,7 @@ class MaxwellSolverComponent(FieldComponent):
         if config is None:
             return "No solve frequencies set"
         self._ensure_default_source()
+        self._apply_current_timeline_pose()
         run = await asyncio.to_thread(
             api.solvers.solve,
             "witwin.maxwell.fdtd",
@@ -194,6 +195,13 @@ class MaxwellSolverComponent(FieldComponent):
             self.show_volume()
         Notifications.success("Maxwell", f"{str(self.method).upper()} solve complete")
         return "Solve complete"
+
+    def _apply_current_timeline_pose(self) -> None:
+        scene = getattr(self._owner, "scene", None)
+        timeline = getattr(scene, "timeline_manager", None) if scene is not None else None
+        apply_to_scene = getattr(timeline, "apply_to_scene", None)
+        if callable(apply_to_scene):
+            apply_to_scene()
 
     @button(display_name="Update Slice", group=_RESULTS)
     def update_slice(self):
