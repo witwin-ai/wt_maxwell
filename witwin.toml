@@ -1,8 +1,8 @@
 id = "witwin.maxwell"
-name = "Maxwell (FDTD)"
+name = "Maxwell"
 version = "0.1.0"
 author = ""
-description = "Round-trips witwin.maxwell solver scenes <-> the studio editor (materials, sources, monitors, ports, boundaries) and runs FDTD with 2D slice / 3D volume field visualization."
+description = "FDTD electromagnetic field solver with 2D/3D visualization."
 license = "GPL-3.0-or-later"
 repository = "https://github.com/witwin-ai/wt_maxwell"
 dependencies = ["scipy", "numpy"]
