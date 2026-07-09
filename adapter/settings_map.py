@@ -5,6 +5,7 @@
 component back into the ``maxwell`` objects needed to construct a ``Scene``
 (lazy-imports witwin.maxwell).
 """
+import ast
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
@@ -39,7 +40,7 @@ class SceneConfig:
     grid: Any
     boundary: Any
     subpixel_samples: Any              # int or (int, int, int)
-    symmetry: Optional[Tuple[Optional[str], Optional[str], Optional[str]]]
+    symmetry: Optional[Tuple[Any, Any, Any]]
     device: str
 
 
@@ -185,9 +186,10 @@ class SettingsMap:
             comp.subpixel_uniform = False
             comp.subpixel_x, comp.subpixel_y, comp.subpixel_z = (int(s) for s in sub)
         sym = scene.symmetry or (None, None, None)
-        comp.symmetry_x = sym[0] or "none"
-        comp.symmetry_y = sym[1] or "none"
-        comp.symmetry_z = sym[2] or "none"
+        for axis, value in zip(("x", "y", "z"), sym):
+            mode, face = SettingsMap._read_symmetry_axis(value)
+            setattr(comp, f"symmetry_{axis}", mode)
+            setattr(comp, f"symmetry_{axis}_face", face)
         comp.device = str(scene.device)
 
     @staticmethod
@@ -198,6 +200,44 @@ class SettingsMap:
 
     @staticmethod
     def _build_symmetry(comp: Any) -> Optional[Tuple[Optional[str], ...]]:
-        axes = tuple(None if str(getattr(comp, f"symmetry_{a}")) == "none"
-                     else str(getattr(comp, f"symmetry_{a}")) for a in ("x", "y", "z"))
+        axes = tuple(SettingsMap._build_symmetry_axis(comp, axis) for axis in ("x", "y", "z"))
         return None if axes == (None, None, None) else axes
+
+    @staticmethod
+    def _read_symmetry_axis(value: Any) -> Tuple[str, str]:
+        value = SettingsMap._coerce_symmetry_value(value)
+        if value is None:
+            return "none", "low"
+        if isinstance(value, (tuple, list)):
+            mode = str(value[0]) if len(value) > 0 else "none"
+            face = str(value[1]).lower() if len(value) > 1 else "low"
+            return mode, face if face in {"low", "high"} else "low"
+        return str(value), "low"
+
+    @staticmethod
+    def _build_symmetry_axis(comp: Any, axis: str) -> Optional[Tuple[str, str]]:
+        raw_mode = SettingsMap._coerce_symmetry_value(getattr(comp, f"symmetry_{axis}"))
+        if isinstance(raw_mode, (tuple, list)):
+            mode = str(raw_mode[0]) if len(raw_mode) > 0 else "none"
+            face = str(raw_mode[1]).lower() if len(raw_mode) > 1 else "low"
+        else:
+            mode = str(raw_mode)
+            face = str(getattr(comp, f"symmetry_{axis}_face", "low")).lower()
+        if mode == "none":
+            return None
+        if face not in {"low", "high"}:
+            face = "low"
+        return (mode, face)
+
+    @staticmethod
+    def _coerce_symmetry_value(value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+        text = value.strip()
+        if not (text.startswith("(") or text.startswith("[")):
+            return value
+        try:
+            parsed = ast.literal_eval(text)
+        except (SyntaxError, ValueError):
+            return value
+        return parsed if isinstance(parsed, (tuple, list)) else value

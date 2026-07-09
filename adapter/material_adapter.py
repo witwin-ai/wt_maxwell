@@ -25,6 +25,19 @@ def _f(value: Any) -> float:
     return float(value)
 
 
+def _complex_of(value: Any) -> complex:
+    """Read the Material ``eps_r`` complex field (stored as ``[real, imag]``).
+
+    Accepts the [real, imag] list/tensor form and, defensively, a bare real
+    scalar (imag 0)."""
+    value = value.tolist() if hasattr(value, "tolist") else value
+    if isinstance(value, (list, tuple)):
+        real = float(value[0]) if len(value) > 0 else 0.0
+        imag = float(value[1]) if len(value) > 1 else 0.0
+        return complex(real, imag)
+    return complex(_f(value))
+
+
 def _vec(value: Any) -> List[float]:
     seq = value.tolist() if hasattr(value, "tolist") else value
     return [float(v) for v in seq]
@@ -69,7 +82,11 @@ class MaterialAdapter:
 
         MaterialAdapter._check_guards(poles_active, tensors_active, kerr_active)
 
-        eps_r, mu_r, sigma = _f(em.eps_r), _f(em.mu_r), _f(em.sigma_e)
+        eps_c = _complex_of(em.eps_r)
+        # Pass a complex eps_r to the solver when lossy; a plain real otherwise.
+        eps_r = eps_c if eps_c.imag != 0.0 else eps_c.real
+        eps_real = eps_c.real  # scalar used for diagonal-tensor isotropy checks
+        mu_r, sigma = _f(em.mu_r), _f(em.sigma_e)
         kwargs: dict = {}
         if poles_active:
             kwargs.update(
@@ -81,7 +98,7 @@ class MaterialAdapter:
                 mu_lorentz_poles=tuple(mw.LorentzPole(a, b, c) for a, b, c in mu_lorentz),
             )
         if tensors_active:
-            MaterialAdapter._fill_tensors(mw, kwargs, em, eps_r, mu_r, sigma)
+            MaterialAdapter._fill_tensors(mw, kwargs, em, eps_real, mu_r, sigma)
         if kerr_active:
             kwargs["kerr_chi3"] = kerr
         name = str(em.material_name) if em.material_name else None
@@ -132,7 +149,7 @@ class MaterialAdapter:
                                    for p in material.mu_lorentz_poles]
         if getattr(material, "is_anisotropic", False):
             em.model = "anisotropic"
-            em.epsilon_tensor = MaterialAdapter._tensor_or_iso(material.epsilon_tensor, _f(em.eps_r))
+            em.epsilon_tensor = MaterialAdapter._tensor_or_iso(material.epsilon_tensor, _complex_of(em.eps_r).real)
             em.mu_tensor = MaterialAdapter._tensor_or_iso(material.mu_tensor, _f(em.mu_r))
             em.sigma_e_tensor = MaterialAdapter._tensor_or_iso(material.sigma_e_tensor, _f(em.sigma_e))
         if getattr(material, "is_nonlinear", False):

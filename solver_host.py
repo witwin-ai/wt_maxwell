@@ -66,11 +66,7 @@ from wt_maxwell.adapter.solve import (
     SliceExtractor,
     SolveConfig,
     SolveRunner,
-    _ensure_mesh_sdf_slang_ready,
 )
-
-
-_ensure_mesh_sdf_slang_ready()
 
 
 def _solve_config(config: Dict[str, Any]) -> SolveConfig:

@@ -49,6 +49,25 @@ def test_config_round_trip(adapter):
     assert_config_equal(original, rebuilt)
 
 
+def test_symmetry_face_round_trip(adapter):
+    original = _build_scene().clone(symmetry=(("PEC", "high"), ("PMC", "low"), None))
+
+    rebuilt = adapter.to_platform(adapter.to_studio(original))
+
+    assert tuple(rebuilt.symmetry or (None, None, None)) == tuple(original.symmetry)
+
+
+def test_legacy_stringified_symmetry_face_exports(adapter):
+    studio = adapter.to_studio(_build_scene().clone(structures=[]))
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.symmetry_x = "('PEC', 'high')"
+
+    rebuilt = adapter.to_platform(studio)
+
+    assert tuple(rebuilt.symmetry or (None, None, None))[0] == ("PEC", "high")
+
+
 def test_solver_transform_offsets_domain_bounds(adapter):
     original = _build_scene().clone(structures=[])
     studio = adapter.to_studio(original)
@@ -142,7 +161,8 @@ def test_library_dielectric_box_does_not_expose_platform_components():
     assert mesh is not None and not mesh.is_empty
     assert obj.get_component("PlatformGeometry") is None
     assert obj.get_component("StructureMeta") is None
-    assert approx(float(obj.get_component("Material").eps_r), 11.7)
+    # eps_r is the complex field stored as [real, imag]; check the real part.
+    assert approx(float(obj.get_component("Material").eps_r[0]), 11.7)
 
 
 def test_plain_studio_mesh_exports_as_maxwell_structure(adapter):

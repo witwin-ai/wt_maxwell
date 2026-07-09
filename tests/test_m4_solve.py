@@ -5,8 +5,10 @@ Loads a maxwell scene, round-trips it through the adapter, re-runs
 checks the 2D slice extraction and the 3D viewport volume registration. The whole
 suite skips (needs-user-verification) if the solver can't run in this environment.
 """
+import ast
 import hashlib
 import os
+from pathlib import Path
 
 import witwin.maxwell as mw
 import numpy as np
@@ -41,6 +43,22 @@ def test_solver_requests_full_field_dft_by_default(adapter):
     config = solver._solve_config()
 
     assert config.full_field_dft is True
+
+
+def test_solver_host_does_not_probe_mesh_sdf_before_serve():
+    source = Path(__file__).resolve().parents[1] / "solver_host.py"
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    module_calls = [
+        node.value.func
+        for node in tree.body
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+    ]
+    call_names = [
+        func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+        for func in module_calls
+    ]
+
+    assert "_ensure_mesh_sdf_native_ready" not in call_names
 
 
 def test_fdtd_roundtrip_runs(adapter, solve_mod, device, solver_ready):
@@ -310,36 +328,36 @@ def test_mesh_sdf_runtime_env_adds_conda_and_cuda_paths(solve_mod, monkeypatch, 
     assert str(cuda / "include") in os.environ["INCLUDE"]
 
 
-def test_mesh_sdf_slang_ready_adds_env_and_requires_available_module(solve_mod, monkeypatch):
+def test_mesh_sdf_native_ready_adds_env_and_requires_available_module(solve_mod, monkeypatch):
     from witwin.core.geometry import mesh_sdf
 
     calls = []
 
-    def slang_available():
+    def native_available():
         calls.append("probe")
         return True
 
     monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_slang_mesh_sdf_available", slang_available)
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_available)
 
-    solve_mod._ensure_mesh_sdf_slang_ready()
+    solve_mod._ensure_mesh_sdf_native_ready()
 
     assert calls == ["env", "probe"]
 
 
-def test_mesh_sdf_slang_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
+def test_mesh_sdf_native_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
     from witwin.core.geometry import mesh_sdf
 
     calls = []
 
-    def slang_unavailable():
+    def native_unavailable():
         calls.append("probe")
         return False
 
     monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_slang_mesh_sdf_available", slang_unavailable)
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_unavailable)
 
-    with pytest.raises(RuntimeError, match="Mesh SDF Slang module is not available"):
-        solve_mod._ensure_mesh_sdf_slang_ready()
+    with pytest.raises(RuntimeError, match="Native CUDA mesh SDF module is not available"):
+        solve_mod._ensure_mesh_sdf_native_ready()
 
     assert calls == ["env", "probe"]

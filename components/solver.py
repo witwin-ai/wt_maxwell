@@ -36,6 +36,7 @@ from ..adapter.solve import SolveConfig
 
 BOUNDARY_KINDS = ["none", "pml", "periodic", "bloch", "pec", "pmc"]
 SYMMETRY_KINDS = ["none", "PEC", "PMC"]
+SYMMETRY_FACES = ["low", "high"]
 FIELD_COMPONENTS = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
 
 _CAT = "Simulation/Maxwell"
@@ -136,6 +137,9 @@ class MaxwellSolverComponent(FieldComponent):
                               group=_SETTINGS)
     symmetry_z = string_field("none", options=SYMMETRY_KINDS, description="Symmetry plane normal to z",
                               group=_SETTINGS)
+    symmetry_x_face = string_field("low", options=SYMMETRY_FACES, hidden=True)
+    symmetry_y_face = string_field("low", options=SYMMETRY_FACES, hidden=True)
+    symmetry_z_face = string_field("low", options=SYMMETRY_FACES, hidden=True)
     device = string_field("cuda", options=["cuda", "cpu"], enum_toggle=True,
                           description="Solve device (FDTD requires CUDA for practical scenes)", group=_SETTINGS)
     frequencies = list_field(float_field(1e9, min=0.0), default=[],

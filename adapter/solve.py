@@ -58,29 +58,29 @@ class SolveRunner:
     @staticmethod
     def run(studio_scene: Any, config: SolveConfig) -> Any:
         """Rebuild the platform scene from the studio scene and run the solve."""
-        _ensure_mesh_sdf_slang_ready()
+        _ensure_mesh_sdf_native_ready()
         platform_scene = MaxwellAdapter().to_platform(studio_scene)
         return SolveRunner.build(platform_scene, config).run()
 
 
-def _ensure_mesh_sdf_slang_ready() -> None:
-    """Expose runtime paths and fail early if the Slang mesh SDF module is absent."""
+def _ensure_mesh_sdf_native_ready() -> None:
+    """Expose runtime paths and fail early if the native CUDA mesh SDF module is absent."""
     try:
         from witwin.core.geometry import mesh_sdf
     except Exception:
         return
 
     _ensure_mesh_sdf_runtime_env()
-    if mesh_sdf._slang_mesh_sdf_available():
+    if mesh_sdf._mesh_sdf_available():
         return
     raise RuntimeError(
-        "Mesh SDF Slang module is not available. "
-        + _mesh_sdf_slang_diagnostics(mesh_sdf)
+        "Native CUDA mesh SDF module is not available. "
+        + _mesh_sdf_native_diagnostics(mesh_sdf)
     )
 
 
 def _ensure_mesh_sdf_runtime_env() -> None:
-    """Expose conda/CUDA paths SlangTorch needs for mesh SDF JIT/linking."""
+    """Expose conda/CUDA paths the native CUDA mesh SDF JIT build needs (nvcc + linker)."""
     env_prefix = Path(sys.executable).resolve().parent
     if (env_prefix / "python.exe").exists():
         conda_prefix = env_prefix
@@ -132,35 +132,25 @@ def _ensure_mesh_sdf_runtime_env() -> None:
     prepend_env("INCLUDE", include_entries)
 
 
-def _mesh_sdf_slang_diagnostics(mesh_sdf: Any) -> str:
+def _mesh_sdf_native_diagnostics(mesh_sdf: Any) -> str:
     details: list[str] = []
-    lib_has_conda = _env_contains("LIB", "Library" + os.sep + "lib")
-    try:
-        slang_path = Path(mesh_sdf.__file__).resolve().parents[1] / "mesh_sdf.slang"
-    except Exception:
-        slang_path = None
-
     details.append(f"python={sys.executable}")
     details.append(f"cuda_path={os.environ.get('CUDA_PATH', '')}")
-    details.append(f"lib_has_conda={lib_has_conda}")
+    details.append(f"lib_has_conda={_env_contains('LIB', 'Library' + os.sep + 'lib')}")
     details.append(f"path_has_cuda={_env_contains('PATH', 'CUDA')}")
-    if slang_path is not None:
-        details.append(f"slang_path={slang_path}")
-        details.append(f"slang_exists={slang_path.exists()}")
-        cache_root = slang_path.parent / ".slangtorch_cache" / "mesh_sdf"
-        locks = list(cache_root.rglob("*.lock")) if cache_root.exists() else []
-        pyds = list(cache_root.rglob("*.pyd")) if cache_root.exists() else []
-        details.append(f"lock_count={len(locks)}")
-        details.append(f"pyd_count={len(pyds)}")
+    try:
+        import torch
 
-    if os.environ.get("WT_MAXWELL_MESH_SDF_DIAGNOSE_LOAD") == "1":
-        try:
-            import slangtorch
+        details.append(f"cuda_available={torch.cuda.is_available()}")
+    except Exception as exc:
+        details.append(f"torch_error={type(exc).__name__}: {str(exc)[:500]}")
 
-            module = slangtorch.loadModule(str(slang_path)) if slang_path is not None else None
-            details.append(f"direct_load={module is not None}")
-        except Exception as exc:
-            details.append(f"direct_load_error={type(exc).__name__}: {str(exc)[:1000]}")
+    try:
+        build_error = mesh_sdf._mesh_sdf_build_error()
+    except Exception:
+        build_error = None
+    if build_error:
+        details.append(f"build_error={str(build_error)[:1000]}")
     return "; ".join(details)
 
 
