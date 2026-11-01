@@ -8,3 +8,7 @@ __pycache__/
 *.hdf5
 *.pt
 *.npz
+
+# Python packaging output
+build/
+dist/
