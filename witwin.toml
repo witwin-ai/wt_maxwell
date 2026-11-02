@@ -114,3 +114,45 @@ path = "models/lines/circular_waveguide.py"
 title = "Circular waveguide"
 category = "Transmission lines"
 tags = ["waveguide", "circular", "te11"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.coupled_microstrip"
+path = "models/passives/coupled_microstrip.py"
+title = "Coupled microstrip lines"
+category = "Passives"
+tags = ["coupled lines", "directional coupler", "even odd mode", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.stub"
+path = "models/passives/stub.py"
+title = "Open or shorted stub"
+category = "Passives"
+tags = ["stub", "open stub", "short stub", "quarter wave", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.stepped_impedance_lpf"
+path = "models/passives/stepped_impedance_lpf.py"
+title = "Stepped-impedance low-pass filter"
+category = "Passives"
+tags = ["filter", "low-pass", "stepped impedance", "butterworth", "chebyshev", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.hairpin_bpf"
+path = "models/passives/hairpin_bpf.py"
+title = "Hairpin band-pass filter"
+category = "Passives"
+tags = ["filter", "band-pass", "hairpin", "coupled resonator", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.wilkinson"
+path = "models/passives/wilkinson.py"
+title = "Wilkinson power divider"
+category = "Passives"
+tags = ["power divider", "wilkinson", "splitter", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.branch_line"
+path = "models/passives/branch_line.py"
+title = "Branch-line coupler"
+category = "Passives"
+tags = ["hybrid", "90 degree", "quadrature", "branch line", "coupler", "microstrip"]

@@ -290,8 +290,11 @@ def coupled_microstrip_synthesis(z0e: float, z0o: float, h: float, eps_r: float)
     return w * h, s * h
 
 
-def coupled_microstrip(w: float, s: float, h: float, eps_r: float) -> Tuple[float, float]:
+def coupled_microstrip(w: float, s: float, h: float, eps_r: float, with_eps: bool = False):
     """``(Z0e, Z0o)`` of edge-coupled microstrip lines (strip ``w``, spacing ``s``, height ``h``).
+
+    ``with_eps`` also returns the even and odd effective permittivities
+    (capacitance over its air value): ``(Z0e, Z0o, eps_e, eps_o)``.
 
     Quasi-static capacitance model of R. Garg and I. J. Bahl, "Characteristics
     of coupled microstriplines", IEEE Trans. MTT-27(7), pp. 700-705, 1979
@@ -317,7 +320,20 @@ def coupled_microstrip(w: float, s: float, h: float, eps_r: float) -> Tuple[floa
     ce_air, co_air = caps(1.0)
     z0e = 1.0 / (C0 * EPS0 * math.sqrt(ce * ce_air))
     z0o = 1.0 / (C0 * EPS0 * math.sqrt(co * co_air))
+    if with_eps:
+        return z0e, z0o, ce / ce_air, co / co_air
     return z0e, z0o
+
+
+def coupled_quarter_wave(w: float, s: float, h: float, eps_r: float, f: float) -> float:
+    """Length (meters) of a coupled section that is a quarter wave at ``f`` for the mean of the two modes.
+
+    The even and odd modes travel at different speeds on microstrip; the
+    usual choice is the mean phase constant, L = lambda0 / (2 (sqrt(eps_e) + sqrt(eps_o))).
+    ``w``, ``s`` and ``h`` share one unit (only their ratios matter).
+    """
+    _, _, eps_e, eps_o = coupled_microstrip(w, s, h, eps_r, with_eps=True)
+    return C0 / f / (2.0 * (math.sqrt(eps_e) + math.sqrt(eps_o)))
 
 
 def coupled_microstrip_design(z0e: float, z0o: float, h: float, eps_r: float) -> Tuple[float, float]:
