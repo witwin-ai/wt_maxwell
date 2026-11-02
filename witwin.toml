@@ -41,3 +41,76 @@ version = "1.0.0"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
 sha256 = "77abf575bd670ee4b527c330c719482af8feeab58b859ea2af40691fd882daf4"
+
+# Generators: lines, passives, connectors, packages, periodic
+# Model files (models/<folder>/<name>.py) that build parametric EM geometry;
+# design formulas and conventions: docs/GENERATORS_LINES.md.
+[[contributes.models]]
+id = "witwin.maxwell.line.microstrip"
+path = "models/lines/microstrip.py"
+title = "Microstrip line"
+category = "Transmission lines"
+tags = ["microstrip", "50 ohm", "pcb", "hammerstad-jensen"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.stripline"
+path = "models/lines/stripline.py"
+title = "Stripline"
+category = "Transmission lines"
+tags = ["stripline", "50 ohm", "pcb"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.cpw"
+path = "models/lines/cpw.py"
+title = "Coplanar waveguide"
+category = "Transmission lines"
+tags = ["cpw", "coplanar", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.grounded_cpw"
+path = "models/lines/grounded_cpw.py"
+title = "Grounded coplanar waveguide"
+category = "Transmission lines"
+tags = ["gcpw", "cbcpw", "coplanar", "via fence", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.coax"
+path = "models/lines/coax.py"
+title = "Coaxial line"
+category = "Transmission lines"
+tags = ["coax", "ptfe", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.rect_waveguide"
+path = "models/lines/rect_waveguide.py"
+title = "Rectangular waveguide"
+category = "Transmission lines"
+tags = ["waveguide", "wr-90", "te10"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_bend_e"
+path = "models/lines/waveguide_bend_e.py"
+title = "Waveguide E-plane bend"
+category = "Transmission lines"
+tags = ["waveguide", "bend", "e-plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_bend_h"
+path = "models/lines/waveguide_bend_h.py"
+title = "Waveguide H-plane bend"
+category = "Transmission lines"
+tags = ["waveguide", "bend", "h-plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_tee"
+path = "models/lines/waveguide_tee.py"
+title = "Waveguide T-junction"
+category = "Transmission lines"
+tags = ["waveguide", "tee", "e-plane", "h-plane", "junction"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.circular_waveguide"
+path = "models/lines/circular_waveguide.py"
+title = "Circular waveguide"
+category = "Transmission lines"
+tags = ["waveguide", "circular", "te11"]
