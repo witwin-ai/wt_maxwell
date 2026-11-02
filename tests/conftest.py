@@ -7,7 +7,7 @@ must be installed — e.g. ``pip install -e server`` and ``pip install -e
 is needed. This conftest only adds the plugins directory so
 ``importlib.import_module("wt_maxwell")`` resolves (the plugin itself is not
 pip-installed; the server adds the same directory at startup). If the base/solver
-deps are not importable, the whole suite is skipped rather than erroring.
+deps are not importable, the round-trip modules are skipped rather than erroring.
 """
 import importlib
 import sys
@@ -29,9 +29,11 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Skip collection of every test module when the base/solver deps are absent.
+# Skip the round-trip modules (test_m<N>_*.py) when the base/solver deps are
+# absent. Other modules, such as the model-generator tests, need only the SDK
+# and guard their own imports.
 if not _DEPS_OK:
-    collect_ignore_glob = ["test_*.py"]
+    collect_ignore_glob = ["test_m[0-9]_*.py"]
 
 
 @pytest.fixture(scope="session")
