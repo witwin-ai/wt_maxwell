@@ -41,3 +41,146 @@ version = "1.0.0"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
 sha256 = "77abf575bd670ee4b527c330c719482af8feeab58b859ea2af40691fd882daf4"
+
+# Generators: antennas and arrays
+# Model files (models/antennas/<name>.py) that build parametric antenna geometry;
+# design formulas and conventions: docs/GENERATORS_ANTENNAS.md.
+[[contributes.models]]
+id = "witwin.maxwell.antenna.patch"
+path = "models/antennas/patch.py"
+title = "Rectangular patch (inset feed)"
+category = "Antennas"
+tags = ["patch", "microstrip", "inset feed", "broadside", "balanis"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.patch_probe"
+path = "models/antennas/patch_probe.py"
+title = "Rectangular patch (coax probe)"
+category = "Antennas"
+tags = ["patch", "coax probe", "broadside", "balanis"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.circular_patch"
+path = "models/antennas/circular_patch.py"
+title = "Circular patch (coax probe)"
+category = "Antennas"
+tags = ["patch", "circular", "coax probe", "broadside"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.aperture_coupled_patch"
+path = "models/antennas/aperture_coupled_patch.py"
+title = "Aperture-coupled patch"
+category = "Antennas"
+tags = ["patch", "aperture coupled", "slot", "two substrates"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.dipole"
+path = "models/antennas/dipole.py"
+title = "Half-wave dipole"
+category = "Antennas"
+tags = ["dipole", "wire", "strip", "induced emf"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.monopole"
+path = "models/antennas/monopole.py"
+title = "Quarter-wave monopole"
+category = "Antennas"
+tags = ["monopole", "wire", "ground plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.pifa"
+path = "models/antennas/pifa.py"
+title = "PIFA"
+category = "Antennas"
+tags = ["pifa", "planar inverted-f", "shorting plate", "mobile"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.ifa"
+path = "models/antennas/ifa.py"
+title = "Printed inverted-F antenna"
+category = "Antennas"
+tags = ["ifa", "inverted-f", "printed", "pcb"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.yagi"
+path = "models/antennas/yagi.py"
+title = "Yagi-Uda"
+category = "Antennas"
+tags = ["yagi", "end-fire", "wire", "directors"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.lpda"
+path = "models/antennas/lpda.py"
+title = "Log-periodic dipole array"
+category = "Antennas"
+tags = ["lpda", "log-periodic", "broadband", "carrel"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.helix"
+path = "models/antennas/helix.py"
+title = "Axial-mode helix"
+category = "Antennas"
+tags = ["helix", "axial mode", "circular polarization", "kraus"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.spiral"
+path = "models/antennas/spiral.py"
+title = "Archimedean spiral"
+category = "Antennas"
+tags = ["spiral", "archimedean", "broadband", "circular polarization"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.pyramidal_horn"
+path = "models/antennas/pyramidal_horn.py"
+title = "Pyramidal horn (optimum gain)"
+category = "Antennas"
+tags = ["horn", "pyramidal", "waveguide", "high gain"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.conical_horn"
+path = "models/antennas/conical_horn.py"
+title = "Conical horn (optimum gain)"
+category = "Antennas"
+tags = ["horn", "conical", "circular waveguide"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.corrugated_horn"
+path = "models/antennas/corrugated_horn.py"
+title = "Corrugated conical horn"
+category = "Antennas"
+tags = ["horn", "corrugated", "low cross-pol", "hybrid mode"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.vivaldi"
+path = "models/antennas/vivaldi.py"
+title = "Vivaldi (tapered slot)"
+category = "Antennas"
+tags = ["vivaldi", "tapered slot", "ultra-wideband", "end-fire"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.slot"
+path = "models/antennas/slot.py"
+title = "Half-wave slot"
+category = "Antennas"
+tags = ["slot", "babinet", "ground plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.reflector"
+path = "models/antennas/reflector.py"
+title = "Prime-focus parabolic reflector"
+category = "Antennas"
+tags = ["reflector", "parabolic", "dish", "high gain"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.linear_array"
+path = "models/antennas/linear_array.py"
+title = "Linear array"
+category = "Antennas"
+tags = ["array", "linear", "corporate feed", "uniform"]
+
+[[contributes.models]]
+id = "witwin.maxwell.antenna.planar_array"
+path = "models/antennas/planar_array.py"
+title = "Planar array (rectangular or triangular lattice)"
+category = "Antennas"
+tags = ["array", "planar", "triangular lattice", "rectangular lattice"]
