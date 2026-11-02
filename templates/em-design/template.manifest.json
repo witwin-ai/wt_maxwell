@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "templateId": "em-design",
+  "templateVersion": "1.0.0",
+  "projectFormatVersion": "1.0",
+  "minProtocol": 1,
+  "totalBytes": 9000,
+  "treeSha256": "79db52cc47283bdfb7f1f490d0724f83cb5d241c6670a5dc407a0eb6ece70485",
+  "recommendedPlugins": [
+    "witwin.maxwell"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 402,
+      "sha256": "5fd1a682f85b84bef5335bb46050740f284b22e34275091e687337587230cf96"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1825,
+      "sha256": "5199e56cf0fa17f4f4d6b77657bbfa0982a4d141023f52ce799473b3fdcfe368"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 813,
+      "sha256": "9aeefb89648c4b0af11296fd0270cec8d53d85cdb26959edb608c4d5458a046c"
+    },
+    {
+      "path": "scenes/main.wtscene",
+      "bytes": 2487,
+      "sha256": "60092e703164c1d086d07dee47be59c23f5c88012c9ab9a56350d31a9c93bc23"
+    },
+    {
+      "path": "scripts/prepare_em.py",
+      "bytes": 2397,
+      "sha256": "e8a33eb7e51f85fc697477947866fe4f98e712938bc0bb9f067e6805fecd0691"
+    },
+    {
+      "path": "tests/test_scene.py",
+      "bytes": 846,
+      "sha256": "3d4b63892596db24f77c654f69912ed309e53475a3eeca9d5dd662f1146e417f"
+    },
+    {
+      "path": "witwin.toml",
+      "bytes": 230,
+      "sha256": "e0b8703bf095ac1130e171506b8594ea6f51e189b8300e2a6a95fc9364cb1d78"
+    }
+  ]
+}
