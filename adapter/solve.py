@@ -29,6 +29,40 @@ class SolveConfig:
     full_field_dft: bool = False         # FDTD
     time_steps: Optional[int] = None     # FDTD: None = auto
 
+    @classmethod
+    def from_component(cls, comp: Any) -> "SolveConfig":
+        """Read a MaxwellSolver component; the Studio button and ``witwin solve`` both use it."""
+        from .common import num
+
+        return cls(
+            method=str(comp.method),
+            frequencies=tuple(num(f) for f in (comp.frequencies or ())),
+            absorber=str(comp.absorber),
+            full_field_dft=True,
+            time_steps=None if bool(comp.time_steps_auto) else int(num(comp.time_steps)),
+        )
+
+    @classmethod
+    def for_scene(cls, studio_scene: Any, overrides: Optional[dict] = None) -> "SolveConfig":
+        """The scene's MaxwellSolver settings, with explicit ``overrides`` winning.
+
+        A headless solve (``project.solve``) sends no config, so the scene is
+        the source of truth; the Studio button sends the same fields explicitly.
+        """
+        settings = MaxwellAdapter._find_settings(studio_scene)
+        comp = settings.get_component("MaxwellSolver") if settings is not None else None
+        base = cls.from_component(comp) if comp is not None else cls()
+        for key, value in (overrides or {}).items():
+            if value is None or value == () or value == []:
+                continue
+            if key == "frequencies":
+                value = tuple(float(v) for v in value)
+            elif key == "time_steps":
+                value = int(value)
+            if hasattr(base, key):
+                setattr(base, key, value)
+        return base
+
 
 @dataclass
 class SliceResult:
@@ -58,19 +92,25 @@ class SolveRunner:
     @staticmethod
     def run(studio_scene: Any, config: SolveConfig) -> Any:
         """Rebuild the platform scene from the studio scene and run the solve."""
-        _ensure_mesh_sdf_native_ready()
+        _ensure_mesh_sdf_runtime_env()
         platform_scene = MaxwellAdapter().to_platform(studio_scene)
+        if any(str(s.geometry.kind) == "mesh" for s in platform_scene.structures):
+            _ensure_mesh_sdf_native_ready()
         return SolveRunner.build(platform_scene, config).run()
 
 
 def _ensure_mesh_sdf_native_ready() -> None:
-    """Expose runtime paths and fail early if the native CUDA mesh SDF module is absent."""
+    """Fail early if the native CUDA mesh SDF module is absent.
+
+    Only mesh structures need it. ``import witwin.maxwell`` registers the
+    accelerator, so before that import ``_mesh_sdf_available()`` is always
+    False; ``to_platform`` has done the import by the time this runs.
+    """
     try:
         from witwin.core.geometry import mesh_sdf
     except Exception:
         return
 
-    _ensure_mesh_sdf_runtime_env()
     if mesh_sdf._mesh_sdf_available():
         return
     raise RuntimeError(

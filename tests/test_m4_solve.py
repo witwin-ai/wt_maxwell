@@ -100,7 +100,7 @@ def test_slice_log_scale(adapter, solve_mod, device, solver_ready):
 
 
 def test_show_3d_volume_registers_object():
-    import wt_volume.components.volume  # noqa: F401
+    pytest.importorskip("wt_volume.components.volume", reason="needs the wt_volume Plugin on sys.path")
     from witwin_server import Scene
     from witwin_server.features.platform.bridge import FieldViz
 
@@ -328,7 +328,7 @@ def test_mesh_sdf_runtime_env_adds_conda_and_cuda_paths(solve_mod, monkeypatch, 
     assert str(cuda / "include") in os.environ["INCLUDE"]
 
 
-def test_mesh_sdf_native_ready_adds_env_and_requires_available_module(solve_mod, monkeypatch):
+def test_mesh_sdf_native_ready_requires_available_module(solve_mod, monkeypatch):
     from witwin.core.geometry import mesh_sdf
 
     calls = []
@@ -342,7 +342,7 @@ def test_mesh_sdf_native_ready_adds_env_and_requires_available_module(solve_mod,
 
     solve_mod._ensure_mesh_sdf_native_ready()
 
-    assert calls == ["env", "probe"]
+    assert calls == ["probe"]
 
 
 def test_mesh_sdf_native_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
@@ -360,4 +360,41 @@ def test_mesh_sdf_native_ready_raises_when_module_unavailable(solve_mod, monkeyp
     with pytest.raises(RuntimeError, match="Native CUDA mesh SDF module is not available"):
         solve_mod._ensure_mesh_sdf_native_ready()
 
-    assert calls == ["env", "probe"]
+    assert calls == ["probe"]
+
+
+class _StubSimulation:
+    def run(self):
+        return "result"
+
+
+def test_run_skips_mesh_sdf_probe_without_mesh_structures(adapter, solve_mod, monkeypatch):
+    # A box-only scene never needs the CUDA mesh SDF; the probe used to run
+    # before ``import witwin.maxwell`` registered the accelerator and failed every solve.
+    studio = adapter.to_studio(_scene("cuda").clone(structures=[]))
+
+    def probe():
+        raise AssertionError("mesh SDF probed for a scene without meshes")
+
+    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_native_ready", probe)
+    monkeypatch.setattr(solve_mod.SolveRunner, "build", staticmethod(lambda scene, config: _StubSimulation()))
+
+    assert solve_mod.SolveRunner.run(studio, solve_mod.SolveConfig(frequencies=(1e9,))) == "result"
+
+
+def test_solve_config_for_scene_reads_the_solver_component(adapter, solve_mod):
+    # ``witwin solve`` sends no config: the scene's MaxwellSolver settings apply.
+    studio = adapter.to_studio(_scene("cuda"))
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.frequencies = [1e9, 2e9]
+    solver.time_steps_auto = False
+    solver.time_steps = 321
+
+    config = solve_mod.SolveConfig.for_scene(studio, {})
+    assert config.frequencies == (1e9, 2e9)
+    assert config.time_steps == 321
+
+    override = solve_mod.SolveConfig.for_scene(studio, {"frequencies": [3e9], "time_steps": None})
+    assert override.frequencies == (3e9,)
+    assert override.time_steps == 321
