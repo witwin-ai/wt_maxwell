@@ -61,7 +61,7 @@ if str(PLUGIN_PARENT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_PARENT))
 
 import wt_maxwell  # noqa: F401  (registers Maxwell components before Scene.from_dict)
-from witwin_server.features.solvers.sdk import query, serve
+from witwin.studio.solver import query, serve
 from wt_maxwell.adapter.solve import (
     SliceExtractor,
     SolveConfig,
