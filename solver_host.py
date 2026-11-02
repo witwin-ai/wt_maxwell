@@ -56,11 +56,25 @@ def _ensure_mesh_sdf_runtime_env() -> None:
 
 _ensure_mesh_sdf_runtime_env()
 
-PLUGIN_PARENT = Path(__file__).resolve().parent.parent
-if str(PLUGIN_PARENT) not in sys.path:
-    sys.path.insert(0, str(PLUGIN_PARENT))
 
-import wt_maxwell  # noqa: F401  (registers Maxwell components before Scene.from_dict)
+def _import_this_plugin() -> None:
+    """Import this folder as the ``wt_maxwell`` package.
+
+    The folder name is not always ``wt_maxwell`` (a worktree, a cloud store
+    ``<id>/<version>/`` folder), so putting the parent on ``sys.path`` and
+    importing by name can load another checkout of the Plugin, or none.
+    """
+    import importlib.util
+
+    root = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location(
+        "wt_maxwell", root / "__init__.py", submodule_search_locations=[str(root)])
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["wt_maxwell"] = module
+    spec.loader.exec_module(module)  # registers Maxwell components before Scene.from_dict
+
+
+_import_this_plugin()
 from witwin.studio.solver import query, serve
 from wt_maxwell.adapter.solve import (
     SliceExtractor,
@@ -69,19 +83,9 @@ from wt_maxwell.adapter.solve import (
 )
 
 
-def _solve_config(config: Dict[str, Any]) -> SolveConfig:
-    return SolveConfig(
-        method=str(config.get("method") or "fdtd"),
-        frequencies=tuple(float(v) for v in (config.get("frequencies") or ())),
-        absorber=str(config.get("absorber") or "cpml"),
-        full_field_dft=bool(config.get("full_field_dft", False)),
-        time_steps=(None if config.get("time_steps") is None else int(config["time_steps"])),
-    )
-
-
 def solve(ctx, scene, config):
     ctx.progress(0.0, "building Maxwell scene")
-    result = SolveRunner.run(scene, _solve_config(config or {}))
+    result = SolveRunner.run(scene, SolveConfig.for_scene(scene, config))
     ctx.progress(1.0, "Maxwell solve complete")
     return result
 
