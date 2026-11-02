@@ -378,9 +378,33 @@ function ModePlane({
   const selectMode = (index) => {
     void host.sceneWrites.updateComponentField(object.id, component.name, "mode_index", index);
   };
-  const listAnchor = [0, 0, 0];
-  listAnchor[ua] = size[ua] / 2 + planeSide * 0.12;
-  return /* @__PURE__ */ React.createElement("group", null, profile && /* @__PURE__ */ React.createElement(ProfileSurface, { size, profile, opacity: 0.92 }), /* @__PURE__ */ React.createElement(PlaneRect, { center: origin, size, color, dashed, dash: domain.extent * 0.012, fillOpacity: profile ? 0 : 0.14 }), /* @__PURE__ */ React.createElement(Arrow, { origin, direction, length: Math.max(planeSide * 0.6, domain.extent * 0.06), color }), selected && /* @__PURE__ */ React.createElement(PlaneDimensions, { center: origin, size, color }), selected && profiles.length > 0 && /* @__PURE__ */ React.createElement(Html, { position: listAnchor, zIndexRange: [30, 0], style: { transform: "translate(8px, -50%)" } }, /* @__PURE__ */ React.createElement(ModeList, { profiles, selected: modeIndex, aspect: size[va] / Math.max(size[ua], 1e-12), onSelect: selectMode })));
+  const listAnchorRef = useRef(null);
+  const edgeMidpoints = useMemo(
+    () => [ua, va].flatMap(
+      (axis) => [-1, 1].map((sign2) => {
+        const p = new THREE.Vector3();
+        p.setComponent(axis, sign2 * size[axis] / 2);
+        return p;
+      })
+    ),
+    [ua, va, size[ua], size[va]]
+  );
+  useFrame(({ camera }) => {
+    const anchor = listAnchorRef.current;
+    if (!anchor?.parent) return;
+    const screen = new THREE.Vector3();
+    let best = edgeMidpoints[0];
+    let bestX = -Infinity;
+    for (const p of edgeMidpoints) {
+      screen.copy(p).applyMatrix4(anchor.parent.matrixWorld).project(camera);
+      if (screen.x > bestX) {
+        bestX = screen.x;
+        best = p;
+      }
+    }
+    if (!anchor.position.equals(best)) anchor.position.copy(best);
+  });
+  return /* @__PURE__ */ React.createElement("group", null, profile && /* @__PURE__ */ React.createElement(ProfileSurface, { size, profile, opacity: 0.92 }), /* @__PURE__ */ React.createElement(PlaneRect, { center: origin, size, color, dashed, dash: domain.extent * 0.012, fillOpacity: profile ? 0 : 0.14 }), /* @__PURE__ */ React.createElement(Arrow, { origin, direction, length: Math.max(planeSide * 0.6, domain.extent * 0.06), color }), selected && /* @__PURE__ */ React.createElement(PlaneDimensions, { center: origin, size, color }), selected && profiles.length > 0 && /* @__PURE__ */ React.createElement("group", { ref: listAnchorRef }, /* @__PURE__ */ React.createElement(Html, { zIndexRange: [30, 0], style: { transform: "translate(24px, -50%)" } }, /* @__PURE__ */ React.createElement(ModeList, { profiles, selected: modeIndex, aspect: size[va] / Math.max(size[ua], 1e-12), onSelect: selectMode }))));
 }
 
 // src/visuals.tsx

@@ -1,4 +1,5 @@
-import { Html, React, THREE, useEffect, useMemo, useRef } from './runtime';
+import { Html, React, THREE, useEffect, useFrame, useMemo, useRef } from './runtime';
+import type * as ThreeTypes from 'three';
 import type { HostSceneObject, ViewportHost } from './sdk/types';
 import { Arrow, PlaneDimensions, PlaneRect } from './primitives';
 import { normalAxis, value, vec3, type Domain, type Vec3 } from './emStyle';
@@ -162,9 +163,36 @@ export function ModePlane({
     void host.sceneWrites.updateComponentField(object.id, component.name, 'mode_index', index);
   };
 
-  // The list sits beside the plane's +u edge, at mid height.
-  const listAnchor: Vec3 = [0, 0, 0];
-  listAnchor[ua] = size[ua] / 2 + planeSide * 0.12;
+  // The list sits beside whichever plane edge is right-most on screen, at
+  // that edge's midpoint. A fixed in-plane edge put it over the plane and
+  // its arrow whenever that edge pointed up or toward the camera.
+  const listAnchorRef = useRef<ThreeTypes.Group>(null);
+  const edgeMidpoints = useMemo(
+    () =>
+      [ua, va].flatMap((axis) =>
+        [-1, 1].map((sign) => {
+          const p = new THREE.Vector3();
+          p.setComponent(axis, (sign * size[axis]) / 2);
+          return p;
+        }),
+      ),
+    [ua, va, size[ua], size[va]],
+  );
+  useFrame(({ camera }) => {
+    const anchor = listAnchorRef.current;
+    if (!anchor?.parent) return;
+    const screen = new THREE.Vector3();
+    let best = edgeMidpoints[0];
+    let bestX = -Infinity;
+    for (const p of edgeMidpoints) {
+      screen.copy(p).applyMatrix4(anchor.parent.matrixWorld).project(camera);
+      if (screen.x > bestX) {
+        bestX = screen.x;
+        best = p;
+      }
+    }
+    if (!anchor.position.equals(best)) anchor.position.copy(best);
+  });
 
   return (
     <group>
@@ -173,9 +201,11 @@ export function ModePlane({
       <Arrow origin={origin} direction={direction} length={Math.max(planeSide * 0.6, domain.extent * 0.06)} color={color} />
       {selected && <PlaneDimensions center={origin} size={size} color={color} />}
       {selected && profiles.length > 0 && (
-        <Html position={listAnchor} zIndexRange={[30, 0]} style={{ transform: 'translate(8px, -50%)' }}>
-          <ModeList profiles={profiles} selected={modeIndex} aspect={size[va] / Math.max(size[ua], 1e-12)} onSelect={selectMode} />
-        </Html>
+        <group ref={listAnchorRef}>
+          <Html zIndexRange={[30, 0]} style={{ transform: 'translate(24px, -50%)' }}>
+            <ModeList profiles={profiles} selected={modeIndex} aspect={size[va] / Math.max(size[ua], 1e-12)} onSelect={selectMode} />
+          </Html>
+        </group>
       )}
     </group>
   );
