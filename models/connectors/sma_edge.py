@@ -38,14 +38,14 @@ PARAMS = {
     "leg_thickness": ws.param(0.6, unit="mm", min=0.05, max=5, description="ground leg thickness (z)"),
     "leg_offset": ws.param(3.0, unit="mm", min=0.1, max=20, description="leg center distance from the axis (y)"),
     "board_thickness": ws.param(1.6, unit="mm", min=0.05, max=10, description="board the connector clamps"),
-    "eps_r": ws.param(2.1, min=1, max=20, description="insulator relative permittivity (PTFE 2.1)"),
+    "eps_r": ws.param(2.1, min=1, max=20, description="insulator relative permittivity (PTFE 2.1), dimensionless"),
     "tan_delta": ws.param(0.0002, min=0, max=1, description="insulator loss tangent"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="characteristic impedance, ohm"),
     "d_ptfe": ws.param(4.2, unit="mm", min=0.1, max=20, description="insulator diameter (kept)"),
-    "eps_r": ws.param(2.1, min=1, max=20, description="insulator relative permittivity"),
+    "eps_r": ws.param(2.1, min=1, max=20, description="insulator relative permittivity, dimensionless"),
 }
 
 ETA0 = 376.730313668  # free-space wave impedance, ohm

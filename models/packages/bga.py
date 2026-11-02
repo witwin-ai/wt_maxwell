@@ -29,8 +29,8 @@ PARAMS = {
     "substrate_thickness": ws.param(0.36, unit="mm", min=0.02, max=3, description="laminate substrate thickness"),
     "mold_height": ws.param(0.6, unit="mm", min=0.02, max=5, description="mold cap height"),
     "mold_inset": ws.param(0.3, unit="mm", min=0, max=10, description="mold cap inset from the substrate edge"),
-    "substrate_eps_r": ws.param(4.2, min=1, max=20, description="substrate relative permittivity (BT laminate)"),
-    "mold_eps_r": ws.param(3.8, min=1, max=20, description="mold compound relative permittivity"),
+    "substrate_eps_r": ws.param(4.2, min=1, max=20, description="substrate relative permittivity (BT laminate), dimensionless"),
+    "mold_eps_r": ws.param(3.8, min=1, max=20, description="mold compound relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.01, min=0, max=1, description="loss tangent of both dielectrics"),
 }
 

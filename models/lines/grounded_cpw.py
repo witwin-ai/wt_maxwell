@@ -25,9 +25,9 @@ PARAMS = {
     "length": ws.param(30, unit="mm", min=0.5, max=1000, description="line and board length along x"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="frequency for the loss conductivity"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="frequency for the loss conductivity"),
     "vias": ws.param(1, integer=True, min=0, max=1, description="1: via fence on both sides"),
     "via_drill": ws.param(0.4, unit="mm", min=0.01, max=5, description="via drill diameter"),
     "via_pitch": ws.param(2.5, unit="mm", min=0.05, max=50, description="via spacing along the line"),
@@ -38,7 +38,7 @@ DESIGN_SPEC = {
     "z0": ws.param(50, min=20, max=150, description="characteristic impedance, ohm"),
     "s": ws.param(1.5, unit="mm", min=0.005, max=50, description="center strip width (kept)"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 

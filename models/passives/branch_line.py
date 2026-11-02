@@ -24,7 +24,7 @@ from _passives_layout import F, board_stack, guided_wavelength_mm, width
 
 CONFIG = {"unit": "mm", "up": "z", "grid": 0.1e-3}
 PARAMS = {
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency"),
     "w0": ws.param(3.039, unit="mm", min=0.01, max=50, description="feed width (Z0)"),
     "w_series": ws.param(5.1998, unit="mm", min=0.01, max=50, description="series arm width (Z0/sqrt(2))"),
     "w_shunt": ws.param(3.039, unit="mm", min=0.01, max=50, description="shunt arm width (Z0)"),
@@ -32,16 +32,16 @@ PARAMS = {
     "margin": ws.param(5, unit="mm", min=0.1, max=500, description="board margin above and below"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="port impedance, ohm"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 

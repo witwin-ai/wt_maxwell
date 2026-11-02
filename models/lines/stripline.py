@@ -25,15 +25,15 @@ PARAMS = {
     "length": ws.param(30, unit="mm", min=0.5, max=1000, description="line and board length along x"),
     "board_width": ws.param(16, unit="mm", min=0.5, max=1000, description="board width along y"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="dielectric relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="dielectric relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="dielectric loss tangent"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="frequency for the loss conductivity"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="frequency for the loss conductivity"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=5, max=200, description="characteristic impedance, ohm"),
     "b": ws.param(3.2, unit="mm", min=0.02, max=40, description="ground plane spacing"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="dielectric relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="dielectric relative permittivity, dimensionless"),
 }
 
 

@@ -26,14 +26,14 @@ PARAMS = {
 }
 
 DESIGN_SPEC = {
-    "f0": ws.param(10, unit="GHz", min=0.01, max=1000, description="operating frequency"),
+    "f0": ws.param(1e10, unit="Hz", min=1e7, max=1e12, description="operating frequency"),
 }
 
 
 def design(spec=None):
     """Radius that centers f0 in the TE11..TM01 single-mode band."""
     v = F.spec_values(DESIGN_SPEC, spec)
-    return {"radius": round(F.circular_waveguide_radius(v["f0"] * 1e9) * 1e3, 4)}
+    return {"radius": round(F.circular_waveguide_radius(v["f0"]) * 1e3, 4)}
 
 
 def build(ctx):

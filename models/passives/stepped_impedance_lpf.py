@@ -30,7 +30,7 @@ from _passives_layout import F, board_stack, line, width
 CONFIG = {"unit": "mm", "up": "z", "grid": 0.1e-3}
 PARAMS = {
     "n": ws.param(6, integer=True, min=1, max=15, description="number of sections (filter order)"),
-    "fc": ws.param(2.5, unit="GHz", min=0.001, max=1000, description="cutoff frequency"),
+    "fc": ws.param(2.5e9, unit="Hz", min=1e6, max=1e12, description="cutoff frequency"),
     "ripple_db": ws.param(0, min=0, max=3, description="passband ripple, dB (0: maximally flat)"),
     "w0": ws.param(3.1061, unit="mm", min=0.01, max=50, description="feed line width (Z0)"),
     "w_low": ws.param(11.2417, unit="mm", min=0.01, max=100, description="low-impedance (capacitor) section width"),
@@ -39,7 +39,7 @@ PARAMS = {
     "margin": ws.param(5, unit="mm", min=0.1, max=500, description="board margin beside the widest section"),
     "h": ws.param(1.58, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.2, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.2, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
 }
 
@@ -47,12 +47,12 @@ DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="system impedance, ohm"),
     "z_low": ws.param(20, min=5, max=100, description="lowest practical line impedance, ohm"),
     "z_high": ws.param(120, min=30, max=200, description="highest practical line impedance, ohm"),
-    "fc": ws.param(2.5, unit="GHz", min=0.001, max=1000, description="cutoff frequency"),
-    "n": ws.param(6, integer=True, min=1, max=15, description="filter order"),
+    "fc": ws.param(2.5e9, unit="Hz", min=1e6, max=1e12, description="cutoff frequency"),
+    "n": ws.param(6, integer=True, min=1, max=15, description="filter order, count"),
     "ripple_db": ws.param(0, min=0, max=3, description="passband ripple, dB (0: maximally flat)"),
     "h": ws.param(1.58, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.2, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.2, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 
@@ -76,7 +76,7 @@ def sections(p):
         w = p.w_low if capacitor else p.w_high
         z, eps_eff = line(w, p.h, p.eps_r, p.t)
         beta_l = g[k] * z / z0 if capacitor else g[k] * z0 / z
-        wavelength = F.guided_wavelength(p.fc * 1e9, eps_eff) * 1e3  # mm
+        wavelength = F.guided_wavelength(p.fc, eps_eff) * 1e3  # mm
         out.append({"kind": "C" if capacitor else "L", "g": g[k], "z": z, "width": w,
                     "deg": math.degrees(beta_l), "length": beta_l / (2.0 * math.pi) * wavelength})
     return out

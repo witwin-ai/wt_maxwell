@@ -42,15 +42,15 @@ PARAMS = {
     "lattice": ws.param(1, integer=True, min=0, max=1, description="0: square, 1: triangular"),
     "nx": ws.param(1, integer=True, min=1, max=50, description="lattice periods along x in the cell"),
     "ny": ws.param(1, integer=True, min=1, max=50, description="lattice periods along y (triangular: row pairs)"),
-    "eps_r": ws.param(12.11, min=1, max=100, description="slab relative permittivity (Si at 1550 nm)"),
+    "eps_r": ws.param(12.11, min=1, max=100, description="slab relative permittivity (Si at 1550 nm), dimensionless"),
     "t_box": ws.param(0.0, unit="um", min=0, max=100, description="oxide thickness under the slab, 0 for none"),
-    "eps_box": ws.param(2.085, min=1, max=100, description="oxide relative permittivity (SiO2 at 1550 nm)"),
+    "eps_box": ws.param(2.085, min=1, max=100, description="oxide relative permittivity (SiO2 at 1550 nm), dimensionless"),
 }
 
 DESIGN_SPEC = {
     "wavelength": ws.param(1.55, unit="um", min=0.01, max=1e5, description="free-space design wavelength"),
-    "u_mid": ws.param(0.271, min=0.01, max=2, description="gap-center normalized frequency a/lambda"),
-    "r_ratio": ws.param(0.3, min=0.01, max=0.49, description="hole radius over lattice constant"),
+    "u_mid": ws.param(0.271, min=0.01, max=2, description="gap-center normalized frequency a/lambda, dimensionless"),
+    "r_ratio": ws.param(0.3, min=0.01, max=0.49, description="hole radius over lattice constant, dimensionless"),
 }
 
 

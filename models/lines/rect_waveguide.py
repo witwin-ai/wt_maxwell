@@ -25,15 +25,15 @@ PARAMS = {
 }
 
 DESIGN_SPEC = {
-    "f0": ws.param(10, unit="GHz", min=0.01, max=1000, description="operating frequency"),
-    "ratio": ws.param(1.5, min=1.05, max=1.95, description="f0 / fc(TE10)"),
+    "f0": ws.param(1e10, unit="Hz", min=1e7, max=1e12, description="operating frequency"),
+    "ratio": ws.param(1.5, min=1.05, max=1.95, description="f0 / fc(TE10), dimensionless"),
 }
 
 
 def design(spec=None):
     """``a`` and ``b = a/2`` with ``f0 = ratio * fc(TE10)``."""
     v = F.spec_values(DESIGN_SPEC, spec)
-    a, b = F.rect_waveguide_size(v["f0"] * 1e9, v["ratio"])
+    a, b = F.rect_waveguide_size(v["f0"], v["ratio"])
     return {"a": round(a * 1e3, 4), "b": round(b * 1e3, 4)}
 
 

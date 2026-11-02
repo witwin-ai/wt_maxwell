@@ -22,15 +22,15 @@ PARAMS = {
     "d_outer": ws.param(4.1, unit="mm", min=0.02, max=300, description="dielectric (outer conductor inside) diameter"),
     "wall": ws.param(0.5, unit="mm", min=0.01, max=20, description="outer conductor wall thickness"),
     "length": ws.param(30, unit="mm", min=0.1, max=2000, description="line length along x"),
-    "eps_r": ws.param(2.1, min=1, max=100, description="dielectric relative permittivity (PTFE 2.1)"),
+    "eps_r": ws.param(2.1, min=1, max=100, description="dielectric relative permittivity (PTFE 2.1), dimensionless"),
     "tan_delta": ws.param(0.0002, min=0, max=1, description="dielectric loss tangent"),
-    "f0": ws.param(10, unit="GHz", min=0.001, max=1000, description="frequency for the loss conductivity"),
+    "f0": ws.param(1e10, unit="Hz", min=1e6, max=1e12, description="frequency for the loss conductivity"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=5, max=200, description="characteristic impedance, ohm"),
     "d_outer": ws.param(4.1, unit="mm", min=0.02, max=300, description="dielectric diameter (kept)"),
-    "eps_r": ws.param(2.1, min=1, max=100, description="dielectric relative permittivity"),
+    "eps_r": ws.param(2.1, min=1, max=100, description="dielectric relative permittivity, dimensionless"),
 }
 
 
@@ -56,7 +56,7 @@ def build(ctx):
     check_volume(sleeve, math.pi * (ro * ro - ri * ri) * p.length, "dielectric sleeve")
     check_volume(shield, math.pi * (rw * rw - ro * ro) * p.length, "outer conductor")
     dielectric = F.dielectric("PTFE" if abs(p.eps_r - 2.1) < 1e-9 else "dielectric", p.eps_r, p.tan_delta,
-                              p.f0 * 1e9)
+                              p.f0)
     return [
         ws.Body(inner, name="inner", material=PEC, role="conductor", anchors=[
             ws.anchor("port1", point=(-half, 0, 0), normal=(-1, 0, 0), kind="port"),

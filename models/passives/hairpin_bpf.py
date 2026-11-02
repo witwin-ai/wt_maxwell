@@ -34,8 +34,8 @@ from _passives_layout import F, board_stack, line, width
 CONFIG = {"unit": "mm", "up": "z", "grid": 0.05e-3}
 PARAMS = {
     "n": ws.param(5, integer=True, min=2, max=12, description="number of resonators (filter order)"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency"),
-    "fbw": ws.param(0.1, min=0.005, max=0.5, description="fractional bandwidth"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency"),
+    "fbw": ws.param(0.1, min=0.005, max=0.5, description="fractional bandwidth, dimensionless"),
     "ripple_db": ws.param(0.1, min=0, max=3, description="passband ripple, dB (0: maximally flat)"),
     "w": ws.param(1.5104, unit="mm", min=0.01, max=20, description="resonator line width"),
     "w0": ws.param(1.5104, unit="mm", min=0.01, max=20, description="feed line width"),
@@ -45,20 +45,20 @@ PARAMS = {
     "margin": ws.param(5, unit="mm", min=0.1, max=500, description="board margin above and below the resonators"),
     "h": ws.param(0.8, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="port impedance, ohm"),
     "z_resonator": ws.param(50, min=10, max=150, description="resonator line impedance, ohm"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency"),
-    "fbw": ws.param(0.1, min=0.005, max=0.5, description="fractional bandwidth"),
-    "n": ws.param(5, integer=True, min=2, max=12, description="filter order"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency"),
+    "fbw": ws.param(0.1, min=0.005, max=0.5, description="fractional bandwidth, dimensionless"),
+    "n": ws.param(5, integer=True, min=2, max=12, description="filter order, count"),
     "ripple_db": ws.param(0.1, min=0, max=3, description="passband ripple, dB"),
     "h": ws.param(0.8, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 
@@ -77,7 +77,7 @@ def plan(p):
     g = F.lowpass_prototype(n, p.ripple_db)
     zr, eps_r_eff = line(p.w, p.h, p.eps_r, p.t)
     z0, _ = line(p.w0, p.h, p.eps_r, p.t)
-    lam_g = F.guided_wavelength(p.f0 * 1e9, eps_r_eff) * 1e3
+    lam_g = F.guided_wavelength(p.f0, eps_r_eff) * 1e3
     bend = p.arm_spacing + p.w                     # centerline length of the bend
     arm = (lam_g / 2.0 - bend) / 2.0               # centerline length of each arm
     if arm <= p.w:

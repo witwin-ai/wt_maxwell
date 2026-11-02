@@ -25,16 +25,16 @@ PARAMS = {
     "board_width": ws.param(20, unit="mm", min=0.5, max=1000, description="board width along y"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="frequency for the loss conductivity"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="frequency for the loss conductivity"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=5, max=200, description="characteristic impedance, ohm"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0, max=0.5, description="copper thickness (0: zero-thickness model)"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 

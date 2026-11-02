@@ -35,14 +35,14 @@ PARAMS = {
     "ground": ws.param(1, integer=True, min=0, max=1, description="1: ground plane under the substrate"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=50, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(10, unit="GHz", min=0.001, max=10000, description="design frequency (loss conductivity)"),
+    "f0": ws.param(1e10, unit="Hz", min=1e6, max=1e13, description="design frequency (loss conductivity)"),
 }
 
 DESIGN_SPEC = {
-    "f0": ws.param(10, unit="GHz", min=0.001, max=10000, description="loop resonance frequency"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "f0": ws.param(1e10, unit="Hz", min=1e6, max=1e13, description="loop resonance frequency"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "width": ws.param(0.5, unit="mm", min=0.005, max=100, description="loop strip width (kept)"),
     "gap": ws.param(0.9388, unit="mm", min=0.005, max=100, description="gap between loops of adjacent cells"),
 }
@@ -51,7 +51,7 @@ DESIGN_SPEC = {
 def design(spec=None):
     """Loop side from the one-wavelength-perimeter rule; period = loop + gap."""
     v = spec_values(DESIGN_SPEC, spec)
-    lam = C0 / (v["f0"] * 1e9) / math.sqrt(eps_eff_sheet(v["eps_r"])) * 1e3  # mm
+    lam = C0 / v["f0"] / math.sqrt(eps_eff_sheet(v["eps_r"])) * 1e3  # mm
     loop = lam / 4.0 + v["width"]  # mean side = lambda/4, outer side adds one strip width
     return {"loop": round(loop, 4), "period": round(loop + v["gap"], 4), "width": v["width"],
             "eps_r": v["eps_r"], "f0": v["f0"]}

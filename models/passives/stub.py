@@ -30,19 +30,19 @@ PARAMS = {
     "via_drill": ws.param(0.6, unit="mm", min=0.01, max=10, description="shorting via drill diameter"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="design frequency (loss conductivity)"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="design frequency (loss conductivity)"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="through line impedance, ohm"),
     "z_stub": ws.param(50, min=10, max=150, description="stub impedance, ohm"),
     "length_deg": ws.param(90, unit="deg", min=1, max=360, description="stub electrical length at f0"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="design frequency"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="design frequency"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 

@@ -118,6 +118,26 @@ def test_generator_contract(path):
         assert ns["design"]({}) == out, "missing spec keys must take the defaults"
         with pytest.raises(KeyError):
             ns["design"]({"no_such_key": 1.0})
+        for key, spec in ns["DESIGN_SPEC"].items():
+            assert spec.unit or any(word in spec.description for word in UNITLESS_WORDS),                 f"DESIGN_SPEC[{key!r}] must state its unit (SDK unit, or one of {UNITLESS_WORDS} in the description)"
+
+
+# Units the SDK has no key for are named in the description instead.
+UNITLESS_WORDS = ("ohm", "dB", "dimensionless", "count", "flag", "guided wavelengths")
+FREQUENCY_UNITS = ("Hz", "kHz", "MHz", "GHz", "THz")
+FREQUENCY_NAMES = ("f0", "fc", "f_low", "f_high")
+ALL_MODEL_FILES = sorted(p for p in (ROOT / "models").glob("*/*.py") if not p.name.startswith("_"))
+
+
+@pytest.mark.parametrize("path", ALL_MODEL_FILES, ids=_rel)
+def test_frequencies_are_si_hz(path):
+    # One frequency unit across every generator (antennas included), so an
+    # agent can pass f0=5e9 to any of them, to PARAMS and DESIGN_SPEC alike.
+    ns = _namespace(path)
+    for table in ("PARAMS", "DESIGN_SPEC"):
+        for key, spec in (ns.get(table) or {}).items():
+            if key in FREQUENCY_NAMES or spec.unit in FREQUENCY_UNITS:
+                assert spec.unit == "Hz", f"{table}[{key!r}] has unit {spec.unit!r}, expected 'Hz'"
 
 
 @pytest.mark.parametrize("path", MODEL_FILES, ids=_rel)
@@ -270,3 +290,16 @@ def test_fss_cell_variants(params, tmp_path):
     run = run_model(path, params=params, out_dir=tmp_path, brep=False)
     _check_run(run, path, str(params))
     assert {"cell_xmin", "cell_xmax", "cell_ymin", "cell_ymax"} <= {a["name"] for a in _anchors(run)}
+
+
+def test_design_takes_si_frequency(tmp_path):
+    # The case that used to fail: f0 = 5e9 (Hz) passed to the Wilkinson design and build.
+    path = ROOT / "models" / "passives" / "wilkinson.py"
+    params = _namespace(path)["design"]({"f0": 5e9})
+    assert params["f0"] == 5e9
+    run = run_model(path, params=params, out_dir=tmp_path, brep=False)
+    _check_run(run, path, f"design {params}")
+    lpf = _namespace(ROOT / "models" / "passives" / "stepped_impedance_lpf.py")["design"]({"fc": 2.5e9})
+    assert lpf["fc"] == 2.5e9 and lpf["w_low"] == pytest.approx(11.2417, abs=1e-3)
+    loop = _namespace(ROOT / "models" / "periodic" / "square_loop.py")["design"]({"f0": 10e9})
+    assert loop["loop"] == pytest.approx(5.0612, abs=1e-3)

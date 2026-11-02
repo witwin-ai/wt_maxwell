@@ -35,16 +35,16 @@ PARAMS = {
     "substrate": ws.param(1, integer=True, min=0, max=1, description="1: on a dielectric slab, 0: free-standing"),
     "h": ws.param(0.8, unit="mm", min=0.01, max=50, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(10, unit="GHz", min=0.001, max=10000, description="design frequency (loss conductivity)"),
+    "f0": ws.param(1e10, unit="Hz", min=1e6, max=1e13, description="design frequency (loss conductivity)"),
 }
 
 DESIGN_SPEC = {
-    "f0": ws.param(10, unit="GHz", min=0.001, max=10000, description="element resonance frequency"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
-    "substrate": ws.param(1, integer=True, min=0, max=1, description="1: on a slab, 0: free-standing"),
-    "fill": ws.param(0.7602, min=0.1, max=0.99, description="element side over period"),
+    "f0": ws.param(1e10, unit="Hz", min=1e6, max=1e13, description="element resonance frequency"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
+    "substrate": ws.param(1, integer=True, min=0, max=1, description="0/1 flag: 1 on a slab, 0 free-standing"),
+    "fill": ws.param(0.7602, min=0.1, max=0.99, description="element side over period, dimensionless"),
 }
 
 
@@ -52,7 +52,7 @@ def design(spec=None):
     """Element side from the half-wave rule; period = side / fill."""
     v = spec_values(DESIGN_SPEC, spec)
     substrate = bool(round(v["substrate"]))
-    lam = C0 / (v["f0"] * 1e9) / math.sqrt(eps_eff_sheet(v["eps_r"], substrate)) * 1e3  # mm
+    lam = C0 / v["f0"] / math.sqrt(eps_eff_sheet(v["eps_r"], substrate)) * 1e3  # mm
     size = lam / 2.0
     out = {"size": round(size, 4), "period": round(size / v["fill"], 4), "substrate": int(substrate), "f0": v["f0"]}
     if substrate:

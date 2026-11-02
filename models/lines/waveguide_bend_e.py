@@ -29,8 +29,8 @@ PARAMS = {
 }
 
 DESIGN_SPEC = {
-    "f0": ws.param(10, unit="GHz", min=0.01, max=1000, description="operating frequency"),
-    "ratio": ws.param(1.5, min=1.05, max=1.95, description="f0 / fc(TE10)"),
+    "f0": ws.param(1e10, unit="Hz", min=1e7, max=1e12, description="operating frequency"),
+    "ratio": ws.param(1.5, min=1.05, max=1.95, description="f0 / fc(TE10), dimensionless"),
     "radius_wavelengths": ws.param(1.0, min=0.3, max=10, description="mean radius in guided wavelengths"),
 }
 
@@ -38,7 +38,7 @@ DESIGN_SPEC = {
 def design(spec=None):
     """Guide size from f0 and a mean radius of ``radius_wavelengths`` guided wavelengths."""
     v = F.spec_values(DESIGN_SPEC, spec)
-    f0 = v["f0"] * 1e9
+    f0 = v["f0"]
     a, b = F.rect_waveguide_size(f0, v["ratio"])
     lam0 = F.C0 / f0
     lam_g = lam0 / math.sqrt(1.0 - (lam0 / (2.0 * a)) ** 2)

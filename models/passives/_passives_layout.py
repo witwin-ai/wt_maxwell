@@ -30,12 +30,12 @@ def _load_formulas():
 F = _load_formulas()
 
 
-def board_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_ghz: Optional[float] = None,
+def board_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_hz: Optional[float] = None,
                 *, unit: str = "mm"):
     """Microstrip board: ``bottom`` ground, ``core`` dielectric, ``top`` copper (same as the line generators)."""
     from witwin.studio import layout as L
 
-    material = F.dielectric("substrate", eps_r, tan_delta, None if not f0_ghz else f0_ghz * 1e9)
+    material = F.dielectric("substrate", eps_r, tan_delta, f0_hz or None)
     return L.LayerStack([
         ("bottom", "ground", t, {"material": PEC}),
         ("core", "dielectric", h, {"material": material}),
@@ -53,7 +53,7 @@ def width(z0: float, h: float, eps_r: float, t: float = 0.0) -> float:
     return round(F.microstrip_width(z0, h, eps_r, t), 4)
 
 
-def guided_wavelength_mm(w: float, h: float, eps_r: float, t: float, f0_ghz: float) -> float:
-    """Guided wavelength (mm) of a microstrip of width ``w`` at ``f0_ghz``."""
+def guided_wavelength_mm(w: float, h: float, eps_r: float, t: float, f0_hz: float) -> float:
+    """Guided wavelength (mm) of a microstrip of width ``w`` at ``f0_hz`` (Hz)."""
     _, eps_eff = line(w, h, eps_r, t)
-    return F.guided_wavelength(f0_ghz * 1e9, eps_eff) * 1e3
+    return F.guided_wavelength(f0_hz, eps_eff) * 1e3

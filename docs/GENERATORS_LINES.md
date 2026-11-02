@@ -20,8 +20,10 @@ validate the geometry.
 
 - **Axes and units.** `CONFIG["up"]` is `"z"`. Lengths are in `CONFIG["unit"]`:
   `mm` for everything except the photonic crystal slab (`um`). Frequencies are
-  GHz, angles degrees. Impedances (ohm) and ripple (dB) have no SDK unit and are
-  plain numbers.
+  always Hz (SI), in `PARAMS` and `DESIGN_SPEC` alike, the same as the antenna
+  generators: pass `f0=2.4e9`, not `2.4`. Angles are degrees. Impedances (ohm),
+  dB values and ratios have no SDK unit; their descriptions name the unit
+  ("ohm", "dB", "dimensionless", "count", "flag").
 - **Boards.** Planar models put the bottom ground at z = -t (top face at z = 0),
   the substrate from z = 0 to h, and top copper at z = h. Copper thinner than
   100 um is a `fill="surface"` sheet on the dielectric face, carrying
@@ -80,6 +82,22 @@ validate the geometry.
 Defaults are the designed values for a common case: 50 ohm lines on 1.6 mm FR4
 (eps_r 4.4), 2.4 GHz passives, WR-90-like waveguides at 10 GHz, and a
 silicon membrane photonic crystal for 1550 nm.
+
+### `DESIGN_SPEC` units
+
+| Key | Unit | Used by |
+| --- | --- | --- |
+| `f0` | Hz | circular_waveguide, rect_waveguide, waveguide_bend_e/h, waveguide_tee, branch_line, coupled_microstrip, hairpin_bpf, stub, wilkinson, fss_cell, square_loop |
+| `fc` | Hz | stepped_impedance_lpf |
+| `h`, `t`, `b`, `s`, `d_outer`, `d_ptfe`, `width`, `gap` | mm | board and line models, sma_edge, square_loop |
+| `wavelength` | um | photonic_crystal_slab |
+| `length_deg` | deg | stub |
+| `z0`, `z_stub`, `z_low`, `z_high`, `z_resonator` | ohm (no SDK unit) | lines, passives, sma_edge |
+| `coupling_db`, `ripple_db` | dB (no SDK unit) | coupled_microstrip, hairpin_bpf, stepped_impedance_lpf |
+| `eps_r`, `ratio`, `fbw`, `fill`, `u_mid`, `r_ratio` | dimensionless | as listed in each model |
+| `radius_wavelengths` | guided wavelengths | waveguide_bend_e/h |
+| `n` | count | hairpin_bpf, stepped_impedance_lpf |
+| `substrate` | 0/1 flag | fss_cell |
 
 ## Formulas and sources
 

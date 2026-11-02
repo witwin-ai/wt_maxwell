@@ -27,17 +27,17 @@ PARAMS = {
     "margin": ws.param(8, unit="mm", min=0.1, max=500, description="board margin beside the strips (y)"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
     "t": ws.param(0.035, unit="mm", min=0.001, max=0.5, description="copper thickness"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.02, min=0, max=1, description="substrate loss tangent"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency (loss conductivity)"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency (loss conductivity)"),
 }
 
 DESIGN_SPEC = {
     "z0": ws.param(50, min=10, max=150, description="system impedance, ohm"),
     "coupling_db": ws.param(10, min=3, max=40, description="coupling, dB (positive)"),
-    "f0": ws.param(2.4, unit="GHz", min=0.001, max=1000, description="center frequency"),
+    "f0": ws.param(2.4e9, unit="Hz", min=1e6, max=1e12, description="center frequency"),
     "h": ws.param(1.6, unit="mm", min=0.01, max=20, description="substrate height"),
-    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity"),
+    "eps_r": ws.param(4.4, min=1, max=100, description="substrate relative permittivity, dimensionless"),
 }
 
 
@@ -46,7 +46,7 @@ def design(spec=None):
     v = F.spec_values(DESIGN_SPEC, spec)
     z0e, z0o = F.coupled_impedances(v["z0"], F.db_to_voltage_coupling(v["coupling_db"]))
     w, s = F.coupled_microstrip_design(z0e, z0o, v["h"], v["eps_r"])
-    length = F.coupled_quarter_wave(w, s, v["h"], v["eps_r"], v["f0"] * 1e9) * 1e3  # m -> mm
+    length = F.coupled_quarter_wave(w, s, v["h"], v["eps_r"], v["f0"]) * 1e3  # m -> mm
     return {"w": round(w, 4), "s": round(s, 4), "length": round(length, 4),
             "h": v["h"], "eps_r": v["eps_r"], "f0": v["f0"]}
 

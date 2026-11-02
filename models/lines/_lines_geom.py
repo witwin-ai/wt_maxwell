@@ -15,13 +15,13 @@ import _lines_formulas as F
 PEC = "PEC"
 
 
-def substrate_material(eps_r: float, tan_delta: float, f0_ghz: Optional[float] = None,
+def substrate_material(eps_r: float, tan_delta: float, f0_hz: Optional[float] = None,
                        name: str = "substrate") -> Dict[str, object]:
-    """Material dict of a board dielectric; ``sigma_e`` from ``tan_delta`` at ``f0_ghz`` (GHz)."""
-    return F.dielectric(name, eps_r, tan_delta, None if not f0_ghz else f0_ghz * 1e9)
+    """Material dict of a board dielectric; ``sigma_e`` from ``tan_delta`` at ``f0_hz`` (Hz)."""
+    return F.dielectric(name, eps_r, tan_delta, f0_hz or None)
 
 
-def board_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_ghz: Optional[float] = None,
+def board_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_hz: Optional[float] = None,
                 *, ground: bool = True, unit: str = "mm"):
     """Two-layer board: ``bottom`` ground (when ``ground``), ``core`` dielectric, ``top`` copper.
 
@@ -33,7 +33,7 @@ def board_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_ghz: Opti
     layers = []
     if ground:
         layers.append(("bottom", "ground", t, {"material": PEC}))
-    layers.append(("core", "dielectric", h, {"material": substrate_material(eps_r, tan_delta, f0_ghz)}))
+    layers.append(("core", "dielectric", h, {"material": substrate_material(eps_r, tan_delta, f0_hz)}))
     layers.append(("top", "conductor", t, {"material": PEC}))
     return L.LayerStack(layers, unit=unit, z0=-t if ground else 0.0)
 

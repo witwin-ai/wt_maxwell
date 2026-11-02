@@ -30,7 +30,7 @@ PARAMS = {
     "lead_length": ws.param(0.4, unit="mm", min=0.02, max=5, description="lead length inward from the body edge"),
     "lead_thickness": ws.param(0.2, unit="mm", min=0.01, max=1, description="lead frame thickness"),
     "epad": ws.param(2.1, unit="mm", min=0, max=30, description="exposed pad size (0: none)"),
-    "eps_r": ws.param(3.8, min=1, max=20, description="mold compound relative permittivity"),
+    "eps_r": ws.param(3.8, min=1, max=20, description="mold compound relative permittivity, dimensionless"),
     "tan_delta": ws.param(0.01, min=0, max=1, description="mold compound loss tangent"),
 }
 

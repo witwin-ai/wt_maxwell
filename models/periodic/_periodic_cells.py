@@ -27,15 +27,15 @@ EPS0 = 8.8541878128e-12
 PEC = "PEC"
 
 
-def dielectric(name: str, eps_r: float, tan_delta: float, f0_ghz: Optional[float] = None) -> Dict[str, object]:
-    """Material dict of a dielectric; ``sigma_e`` from ``tan_delta`` at ``f0_ghz`` when given."""
+def dielectric(name: str, eps_r: float, tan_delta: float, f0_hz: Optional[float] = None) -> Dict[str, object]:
+    """Material dict of a dielectric; ``sigma_e`` from ``tan_delta`` at ``f0_hz`` (Hz) when given."""
     out: Dict[str, object] = {"name": name, "eps_r": float(eps_r), "tan_delta": float(tan_delta)}
-    if f0_ghz:
-        out["sigma_e"] = 2.0 * math.pi * f0_ghz * 1e9 * EPS0 * eps_r * tan_delta
+    if f0_hz:
+        out["sigma_e"] = 2.0 * math.pi * f0_hz * EPS0 * eps_r * tan_delta
     return out
 
 
-def cell_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_ghz: Optional[float], *,
+def cell_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_hz: Optional[float], *,
                ground: bool, substrate: bool = True, top_kind: str = "conductor", unit: str = "mm"):
     """Cell layers: optional ``bottom`` ground, optional ``core`` slab, ``top`` pattern layer."""
     from witwin.studio import layout as L
@@ -44,7 +44,7 @@ def cell_stack(h: float, t: float, eps_r: float, tan_delta: float, f0_ghz: Optio
     if ground:
         layers.append(("bottom", "ground", t, {"material": PEC}))
     if substrate:
-        layers.append(("core", "dielectric", h, {"material": dielectric("substrate", eps_r, tan_delta, f0_ghz)}))
+        layers.append(("core", "dielectric", h, {"material": dielectric("substrate", eps_r, tan_delta, f0_hz)}))
     layers.append(("top", top_kind, t, {"material": PEC}))
     return L.LayerStack(layers, unit=unit, z0=-t if ground else 0.0)
 
