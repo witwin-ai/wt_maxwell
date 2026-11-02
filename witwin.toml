@@ -156,3 +156,31 @@ path = "models/passives/branch_line.py"
 title = "Branch-line coupler"
 category = "Passives"
 tags = ["hybrid", "90 degree", "quadrature", "branch line", "coupler", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.connector.sma_edge"
+path = "models/connectors/sma_edge.py"
+title = "SMA edge-launch connector"
+category = "Connectors"
+tags = ["sma", "edge launch", "end launch", "coax", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.qfn"
+path = "models/packages/qfn.py"
+title = "QFN package"
+category = "Packages"
+tags = ["qfn", "exposed pad", "leads", "ic package"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.bga"
+path = "models/packages/bga.py"
+title = "BGA package"
+category = "Packages"
+tags = ["bga", "solder balls", "ic package"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.wire_bond"
+path = "models/packages/wire_bond.py"
+title = "Wire bond"
+category = "Packages"
+tags = ["wire bond", "bond wire", "jedec", "ball bond"]
