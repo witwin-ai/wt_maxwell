@@ -15,8 +15,11 @@ import sys
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
+from witwin_server.utils.logging import get_logger
 
 from .maxwell_adapter import MaxwellAdapter
+
+logger = get_logger("MaxwellSolve")
 
 
 @dataclass
@@ -95,32 +98,40 @@ class SolveRunner:
         _ensure_mesh_sdf_runtime_env()
         platform_scene = MaxwellAdapter().to_platform(studio_scene)
         if any(str(s.geometry.kind) == "mesh" for s in platform_scene.structures):
-            _ensure_mesh_sdf_native_ready()
+            _warn_if_mesh_sdf_slow()
         return SolveRunner.build(platform_scene, config).run()
 
 
-def _ensure_mesh_sdf_native_ready() -> None:
-    """Fail early if the native CUDA mesh SDF module is absent.
+def _warn_if_mesh_sdf_slow() -> bool:
+    """Log once when mesh structures will voxelize on the torch path.
 
-    Only mesh structures need it. ``import witwin.maxwell`` registers the
-    accelerator, so before that import ``_mesh_sdf_available()`` is always
-    False; ``to_platform`` has done the import by the time this runs.
+    ``witwin.core`` falls back to a torch mesh SDF when no accelerator is
+    registered; witwin-maxwell 0.5 ships none, so the solve still runs, only
+    slower. ``import witwin.maxwell`` registers an accelerator in builds that
+    have one, and ``to_platform`` has done that import by the time this runs.
+    Returns True when the accelerator is present.
     """
-    try:
-        from witwin.core.geometry import mesh_sdf
-    except Exception:
-        return
+    global _MESH_SDF_WARNED
+    from witwin.core.geometry import mesh_sdf
 
     if mesh_sdf._mesh_sdf_available():
-        return
-    raise RuntimeError(
-        "Native CUDA mesh SDF module is not available. "
-        + _mesh_sdf_native_diagnostics(mesh_sdf)
-    )
+        return True
+    if not _MESH_SDF_WARNED:
+        _MESH_SDF_WARNED = True
+        logger.warning("No CUDA mesh SDF accelerator; mesh structures use the slower torch path. "
+                       + _mesh_sdf_native_diagnostics(mesh_sdf))
+    return False
+
+
+_MESH_SDF_WARNED = False
 
 
 def _ensure_mesh_sdf_runtime_env() -> None:
-    """Expose conda/CUDA paths the native CUDA mesh SDF JIT build needs (nvcc + linker)."""
+    """Expose conda/CUDA paths the CUDA JIT builds (FDTD extension, mesh SDF) need: nvcc + linker.
+
+    The solver child calls this through ``SolveRunner.run``; there is no
+    second copy in ``solver_host``.
+    """
     env_prefix = Path(sys.executable).resolve().parent
     if (env_prefix / "python.exe").exists():
         conda_prefix = env_prefix

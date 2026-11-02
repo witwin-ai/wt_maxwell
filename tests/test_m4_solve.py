@@ -58,7 +58,8 @@ def test_solver_host_does_not_probe_mesh_sdf_before_serve():
         for func in module_calls
     ]
 
-    assert "_ensure_mesh_sdf_native_ready" not in call_names
+    assert "_warn_if_mesh_sdf_slow" not in call_names
+    assert "_ensure_mesh_sdf_runtime_env" not in call_names
 
 
 def test_fdtd_roundtrip_runs(adapter, solve_mod, device, solver_ready):
@@ -328,39 +329,26 @@ def test_mesh_sdf_runtime_env_adds_conda_and_cuda_paths(solve_mod, monkeypatch, 
     assert str(cuda / "include") in os.environ["INCLUDE"]
 
 
-def test_mesh_sdf_native_ready_requires_available_module(solve_mod, monkeypatch):
+def test_mesh_sdf_probe_reports_the_accelerator(solve_mod, monkeypatch):
     from witwin.core.geometry import mesh_sdf
 
-    calls = []
-
-    def native_available():
-        calls.append("probe")
-        return True
-
-    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_available)
-
-    solve_mod._ensure_mesh_sdf_native_ready()
-
-    assert calls == ["probe"]
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", lambda: True)
+    assert solve_mod._warn_if_mesh_sdf_slow() is True
 
 
-def test_mesh_sdf_native_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
+def test_mesh_sdf_probe_warns_once_and_lets_the_solve_run(solve_mod, monkeypatch):
+    # witwin-maxwell 0.5 ships no mesh SDF accelerator; witwin.core then uses
+    # its torch path, so a missing accelerator must not stop the solve.
     from witwin.core.geometry import mesh_sdf
 
-    calls = []
+    warnings = []
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", lambda: False)
+    monkeypatch.setattr(solve_mod, "_MESH_SDF_WARNED", False)
+    monkeypatch.setattr(solve_mod.logger, "warning", warnings.append)
 
-    def native_unavailable():
-        calls.append("probe")
-        return False
-
-    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_unavailable)
-
-    with pytest.raises(RuntimeError, match="Native CUDA mesh SDF module is not available"):
-        solve_mod._ensure_mesh_sdf_native_ready()
-
-    assert calls == ["probe"]
+    assert solve_mod._warn_if_mesh_sdf_slow() is False
+    assert solve_mod._warn_if_mesh_sdf_slow() is False
+    assert len(warnings) == 1
 
 
 class _StubSimulation:
@@ -376,7 +364,7 @@ def test_run_skips_mesh_sdf_probe_without_mesh_structures(adapter, solve_mod, mo
     def probe():
         raise AssertionError("mesh SDF probed for a scene without meshes")
 
-    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_native_ready", probe)
+    monkeypatch.setattr(solve_mod, "_warn_if_mesh_sdf_slow", probe)
     monkeypatch.setattr(solve_mod.SolveRunner, "build", staticmethod(lambda scene, config: _StubSimulation()))
 
     assert solve_mod.SolveRunner.run(studio, solve_mod.SolveConfig(frequencies=(1e9,))) == "result"
