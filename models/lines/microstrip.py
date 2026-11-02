@@ -57,7 +57,11 @@ def build(ctx):
     lay.port("port1", "top", (-half, 0.0), direction=(-1, 0), width=p.w, reference="bottom")
     lay.port("port2", "top", (half, 0.0), direction=(1, 0), width=p.w, reference="bottom")
     lay.anchor("center", "top", (0.0, 0.0), normal=(0, 0, 1))
-    return lay.to_bodies(stack)
+    # Strip and board are centred on the origin: an edge moves half the change.
+    # The top copper sheet sits at z = h (the ground occupies -t..0).
+    handles = [ws.handle("w", point=(0.0, p.w / 2, p.h), axis=(0, 1, 0), scale=2),
+               ws.handle("length", point=(half, 0.0, p.h), axis=(1, 0, 0), scale=2)]
+    return lay.to_bodies(stack) + handles
 
 
 if __name__ == "__main__":

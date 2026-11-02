@@ -121,6 +121,10 @@ def build(ctx):
                 anchors=[ws.anchor("feed", point=(0, 0, 0), normal=(0, 0, -1), kind="port")]),
         ws.anchor("aperture", point=(0, 0, top), normal=(0, 0, 1)),
         ws.anchor("throat", point=(0, 0, lw), normal=(0, 0, 1)),
+        # The mouth is centred on the axis: a wall moves half the aperture change.
+        ws.handle("A", point=(p["A"] / 2, 0, top), axis=(1, 0, 0), scale=2),
+        ws.handle("B", point=(0, p["B"] / 2, top), axis=(0, 1, 0), scale=2),
+        ws.handle("horn_len", point=(0, 0, top), axis=(0, 0, 1)),
     ]
 
 

@@ -107,8 +107,12 @@ def layout(p):
 
 
 def build(ctx):
-    lay, stack, extras = layout(ctx.params)
-    return ac.layout_output(lay, stack, extras)
+    p = ctx.params
+    lay, stack, extras = layout(p)
+    # The patch is centred on the origin, so an edge moves half the size change.
+    handles = [ws.handle("W", point=(p["W"] / 2, 0, p["h"]), axis=(1, 0, 0), scale=2),
+               ws.handle("L", point=(0, p["L"] / 2, p["h"]), axis=(0, 1, 0), scale=2)]
+    return ac.layout_output(lay, stack, extras) + handles
 
 
 if __name__ == "__main__":

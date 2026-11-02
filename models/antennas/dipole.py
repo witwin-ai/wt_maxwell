@@ -91,6 +91,8 @@ def build(ctx):
                 anchors=[ws.anchor("feed", point=(0, 0, 0), normal=(0, 0, 1), kind="port")]),
         ws.anchor("tip_top", point=(0, 0, half), normal=(0, 0, 1)),
         ws.anchor("tip_bottom", point=(0, 0, -half), normal=(0, 0, -1)),
+        # Both arms grow, so the top tip moves half the length change.
+        ws.handle("length", point=(0, 0, half), axis=(0, 0, 1), scale=2),
     ]
 
 

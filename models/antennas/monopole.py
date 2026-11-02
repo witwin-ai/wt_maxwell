@@ -74,6 +74,7 @@ def build(ctx):
                 anchors=[ws.anchor("feed", point=(0, 0, p["gap"] / 2), normal=(0, 0, 1), kind="port")]),
         ws.anchor("tip", point=(0, 0, p["height"]), normal=(0, 0, 1)),
         ws.anchor("ground_bottom", point=(0, 0, 0), normal=(0, 0, -1)),
+        ws.handle("height", point=(0, 0, p["height"]), axis=(0, 0, 1)),
     ]
 
 
