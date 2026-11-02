@@ -31,8 +31,9 @@ from witwin_server.core.components import (
 from witwin_server.core.components.field_region import FieldComponent
 
 from ..adapter.common import num
-from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, resolution_from_bounds
+from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, pml_inset, resolution_from_bounds
 from ..adapter.solve import SolveConfig
+from .mode_profiles import publish_value
 
 BOUNDARY_KINDS = ["none", "pml", "periodic", "bloch", "pec", "pmc"]
 SYMMETRY_KINDS = ["none", "PEC", "PMC"]
@@ -46,6 +47,9 @@ _BOUNDARY = "Boundary"
 _SETTINGS = "Settings"
 _RESULTS = "Results"
 _FDTD = {"field_name": "method", "operator": "eq", "value": "fdtd"}
+_GRID_FIELDS = ("min_bound", "max_bound", "bounds_min", "bounds_max", "ppw", "frequencies", "frequency")
+_BOUNDARY_FIELDS = ("mode", "kind", "num_layers", "x", "y", "z",
+                    "x_low", "x_high", "y_low", "y_high", "z_low", "z_high")
 
 
 @component(name="MaxwellSolver", display_name="Maxwell Solver", category=_CAT)
@@ -305,8 +309,21 @@ class MaxwellSolverComponent(FieldComponent):
             super().set_field("min_bound", value, silent=silent, force=True)
         elif field_name == "bounds_max":
             super().set_field("max_bound", value, silent=silent, force=True)
-        if field_name in ("min_bound", "max_bound", "bounds_min", "bounds_max", "ppw", "frequencies", "frequency"):
+        if field_name in _GRID_FIELDS:
             self._sync_field_bounds()
+        if field_name in _GRID_FIELDS or field_name in _BOUNDARY_FIELDS:
+            publish_value(self, "pml_inset", pml_inset(self))
+
+    # ``pml_inset`` (m per face, x_low..z_high) is derived for the viewport's
+    # dashed PML box: sent with every sync, never saved.
+    def to_dict(self):
+        self._values["pml_inset"] = pml_inset(self)
+        return super().to_dict()
+
+    def to_properties_dict(self):
+        result = super().to_properties_dict()
+        result["properties"].pop("pml_inset", None)
+        return result
 
     def _sync_field_bounds(self) -> None:
         bounds_min = [float(num(v)) for v in self.min_bound]

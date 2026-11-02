@@ -38,7 +38,31 @@ wt-maxwell/
 │   ├── maxwell_adapter.py # MaxwellAdapter (detect / to_studio / to_platform)
 │   ├── settings_map.py    # scene config <-> the Maxwell Solver component
 │   └── material_adapter.py# Material (EM superset) <-> maxwell.Material
+├── web/                   # viewport bundle (TypeScript source, built viewport.js)
 └── tests/                 # CPU round-trip suites (one per phase)
+```
+
+## Viewport display
+
+`web/viewport.js` draws the simulation setup the usual EM-design way: sources
+in blue (dipole arrow along its polarization, plane-wave and beam direction
+arrows, TFSF box), monitors as dashed green planes, boxes and point markers,
+and the PML boundary as a dashed grey box inset from the domain. Sizes scale
+with the domain, so metre-scale and micrometre-scale scenes look alike.
+
+Mode planes (`ModeSource`, `ModeMonitor`) show the profile of `mode_index`
+painted on the plane, dimension lines and a mode list (n_eff, TE fraction,
+thumbnail) while selected. The profiles are display data only: a mode solver
+publishes them with `component.set_mode_profiles([...])`; the contract is in
+`components/mode_profiles.py`. Until then the plane shows its outline only.
+`MaxwellSolver` publishes `pml_inset` (metres per face) for the PML box.
+
+Rebuild the bundle after editing `web/src`:
+
+```
+cd web
+node scripts/build-viewport.mjs   # WITWIN_STUDIO_DIR=<studio/> if not next to witwin-studio
+node --test tests/*.test.mjs
 ```
 
 ## Running the tests

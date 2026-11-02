@@ -20,6 +20,7 @@ from witwin_server.core.components import (
     string_field,
     vector3_field,
 )
+from .mode_profiles import ModeProfilesMixin
 
 _CAT = "Simulation/Maxwell"
 FIELD_COMPONENTS = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
@@ -77,7 +78,7 @@ class ClosedSurfaceMonitorComponent(Component):
 
 
 @component(name="ModeMonitor", category=_CAT)
-class ModeMonitorComponent(Component):
+class ModeMonitorComponent(ModeProfilesMixin, Component):
     """Waveguide mode monitor -> ``maxwell.ModeMonitor`` (position via Transform)."""
 
     size = vector3_field([1.0, 1.0, 0.0], description="Mode plane size (one axis zero)")

@@ -12,6 +12,17 @@ enabled = true
 [engines]
 witwin = "^1.0.0"
 
+[web]
+root = "web"
+
+# Sources, monitors, mode planes and the PML boundary in the viewport.
+[contributes.viewport.host]
+entry = "viewport.js"
+sdkVersion = "1.0.0"
+
+[permissions]
+frontend = true
+
 [[contributes.solvers]]
 id = "witwin.maxwell.fdtd"
 title = "Maxwell FDTD"

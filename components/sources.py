@@ -19,6 +19,7 @@ from witwin_server.core.components import (
     string_field,
     vector3_field,
 )
+from .mode_profiles import ModeProfilesMixin
 
 from .source_time import (
     st_amplitude_field,
@@ -111,7 +112,7 @@ class GaussianBeamSourceComponent(Component):
 
 
 @component(name="ModeSource", category=_CAT)
-class ModeSourceComponent(Component):
+class ModeSourceComponent(ModeProfilesMixin, Component):
     """Waveguide mode source -> ``maxwell.ModeSource`` (position via Transform)."""
 
     size = vector3_field([1.0, 1.0, 0.0], description="Mode plane size (one axis zero)")

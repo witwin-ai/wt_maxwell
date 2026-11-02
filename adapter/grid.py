@@ -63,3 +63,26 @@ def resolution_from_bounds(bounds_min: Any, bounds_max: Any, cell_size: float) -
     hi = list(_iter_values(bounds_max))
     return [max(1, int(math.ceil(abs(float(b) - float(a)) / cell_size)))
             for a, b in zip(lo, hi)]
+
+
+_FACES = ("x_low", "x_high", "y_low", "y_high", "z_low", "z_high")
+
+
+def boundary_face_kinds(comp: Any) -> List[str]:
+    """Boundary kind of each domain face, in ``_FACES`` order, as the solver builds it."""
+    mode = str(getattr(comp, "mode", "global"))
+    if mode == "per_axis":
+        return [str(getattr(comp, face[0], "pml")) for face in _FACES]
+    if mode == "per_face":
+        return [str(getattr(comp, face, "pml")) for face in _FACES]
+    return [str(getattr(comp, "kind", "pml"))] * len(_FACES)
+
+
+def pml_inset(comp: Any) -> List[float]:
+    """PML thickness (m) on each face, x_low..z_high; 0 where the face is not PML.
+
+    The viewport draws the inner PML boundary from this, so it uses the same
+    layer count and cell size as the solve.
+    """
+    thickness = int(_scalar(getattr(comp, "num_layers", 0), 0)) * grid_cell_size(comp)
+    return [thickness if kind == "pml" else 0.0 for kind in boundary_face_kinds(comp)]
