@@ -184,3 +184,181 @@ path = "models/antennas/planar_array.py"
 title = "Planar array (rectangular or triangular lattice)"
 category = "Antennas"
 tags = ["array", "planar", "triangular lattice", "rectangular lattice"]
+
+# Generators: lines, passives, connectors, packages, periodic
+# Model files (models/<folder>/<name>.py) that build parametric EM geometry;
+# design formulas and conventions: docs/GENERATORS_LINES.md.
+[[contributes.models]]
+id = "witwin.maxwell.line.microstrip"
+path = "models/lines/microstrip.py"
+title = "Microstrip line"
+category = "Transmission lines"
+tags = ["microstrip", "50 ohm", "pcb", "hammerstad-jensen"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.stripline"
+path = "models/lines/stripline.py"
+title = "Stripline"
+category = "Transmission lines"
+tags = ["stripline", "50 ohm", "pcb"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.cpw"
+path = "models/lines/cpw.py"
+title = "Coplanar waveguide"
+category = "Transmission lines"
+tags = ["cpw", "coplanar", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.grounded_cpw"
+path = "models/lines/grounded_cpw.py"
+title = "Grounded coplanar waveguide"
+category = "Transmission lines"
+tags = ["gcpw", "cbcpw", "coplanar", "via fence", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.coax"
+path = "models/lines/coax.py"
+title = "Coaxial line"
+category = "Transmission lines"
+tags = ["coax", "ptfe", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.rect_waveguide"
+path = "models/lines/rect_waveguide.py"
+title = "Rectangular waveguide"
+category = "Transmission lines"
+tags = ["waveguide", "wr-90", "te10"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_bend_e"
+path = "models/lines/waveguide_bend_e.py"
+title = "Waveguide E-plane bend"
+category = "Transmission lines"
+tags = ["waveguide", "bend", "e-plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_bend_h"
+path = "models/lines/waveguide_bend_h.py"
+title = "Waveguide H-plane bend"
+category = "Transmission lines"
+tags = ["waveguide", "bend", "h-plane"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.waveguide_tee"
+path = "models/lines/waveguide_tee.py"
+title = "Waveguide T-junction"
+category = "Transmission lines"
+tags = ["waveguide", "tee", "e-plane", "h-plane", "junction"]
+
+[[contributes.models]]
+id = "witwin.maxwell.line.circular_waveguide"
+path = "models/lines/circular_waveguide.py"
+title = "Circular waveguide"
+category = "Transmission lines"
+tags = ["waveguide", "circular", "te11"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.coupled_microstrip"
+path = "models/passives/coupled_microstrip.py"
+title = "Coupled microstrip lines"
+category = "Passives"
+tags = ["coupled lines", "directional coupler", "even odd mode", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.stub"
+path = "models/passives/stub.py"
+title = "Open or shorted stub"
+category = "Passives"
+tags = ["stub", "open stub", "short stub", "quarter wave", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.stepped_impedance_lpf"
+path = "models/passives/stepped_impedance_lpf.py"
+title = "Stepped-impedance low-pass filter"
+category = "Passives"
+tags = ["filter", "low-pass", "stepped impedance", "butterworth", "chebyshev", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.hairpin_bpf"
+path = "models/passives/hairpin_bpf.py"
+title = "Hairpin band-pass filter"
+category = "Passives"
+tags = ["filter", "band-pass", "hairpin", "coupled resonator", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.wilkinson"
+path = "models/passives/wilkinson.py"
+title = "Wilkinson power divider"
+category = "Passives"
+tags = ["power divider", "wilkinson", "splitter", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.passive.branch_line"
+path = "models/passives/branch_line.py"
+title = "Branch-line coupler"
+category = "Passives"
+tags = ["hybrid", "90 degree", "quadrature", "branch line", "coupler", "microstrip"]
+
+[[contributes.models]]
+id = "witwin.maxwell.connector.sma_edge"
+path = "models/connectors/sma_edge.py"
+title = "SMA edge-launch connector"
+category = "Connectors"
+tags = ["sma", "edge launch", "end launch", "coax", "50 ohm"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.qfn"
+path = "models/packages/qfn.py"
+title = "QFN package"
+category = "Packages"
+tags = ["qfn", "exposed pad", "leads", "ic package"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.bga"
+path = "models/packages/bga.py"
+title = "BGA package"
+category = "Packages"
+tags = ["bga", "solder balls", "ic package"]
+
+[[contributes.models]]
+id = "witwin.maxwell.package.wire_bond"
+path = "models/packages/wire_bond.py"
+title = "Wire bond"
+category = "Packages"
+tags = ["wire bond", "bond wire", "jedec", "ball bond"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.square_loop"
+path = "models/periodic/square_loop.py"
+title = "Square-loop unit cell"
+category = "Periodic structures"
+tags = ["metasurface", "fss", "square loop", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.jerusalem_cross"
+path = "models/periodic/jerusalem_cross.py"
+title = "Jerusalem-cross unit cell"
+category = "Periodic structures"
+tags = ["metasurface", "fss", "jerusalem cross", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.split_ring"
+path = "models/periodic/split_ring.py"
+title = "Split-ring resonator cell"
+category = "Periodic structures"
+tags = ["metamaterial", "srr", "split ring", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.fss_cell"
+path = "models/periodic/fss_cell.py"
+title = "FSS patch / aperture cell"
+category = "Periodic structures"
+tags = ["fss", "patch", "aperture", "babinet", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.photonic_crystal_slab"
+path = "models/periodic/photonic_crystal_slab.py"
+title = "Photonic crystal slab"
+category = "Periodic structures"
+tags = ["photonic crystal", "slab", "hole lattice", "triangular", "square", "silicon"]

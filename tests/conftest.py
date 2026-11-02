@@ -7,7 +7,7 @@ must be installed — e.g. ``pip install -e server`` and ``pip install -e
 is needed. This conftest only adds the plugins directory so
 ``importlib.import_module("wt_maxwell")`` resolves (the plugin itself is not
 pip-installed; the server adds the same directory at startup). If the base/solver
-deps are not importable, the whole suite is skipped rather than erroring.
+deps are not importable, the round-trip modules are skipped rather than erroring.
 """
 import importlib
 import sys
