@@ -184,3 +184,38 @@ path = "models/packages/wire_bond.py"
 title = "Wire bond"
 category = "Packages"
 tags = ["wire bond", "bond wire", "jedec", "ball bond"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.square_loop"
+path = "models/periodic/square_loop.py"
+title = "Square-loop unit cell"
+category = "Periodic structures"
+tags = ["metasurface", "fss", "square loop", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.jerusalem_cross"
+path = "models/periodic/jerusalem_cross.py"
+title = "Jerusalem-cross unit cell"
+category = "Periodic structures"
+tags = ["metasurface", "fss", "jerusalem cross", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.split_ring"
+path = "models/periodic/split_ring.py"
+title = "Split-ring resonator cell"
+category = "Periodic structures"
+tags = ["metamaterial", "srr", "split ring", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.fss_cell"
+path = "models/periodic/fss_cell.py"
+title = "FSS patch / aperture cell"
+category = "Periodic structures"
+tags = ["fss", "patch", "aperture", "babinet", "unit cell", "floquet"]
+
+[[contributes.models]]
+id = "witwin.maxwell.periodic.photonic_crystal_slab"
+path = "models/periodic/photonic_crystal_slab.py"
+title = "Photonic crystal slab"
+category = "Periodic structures"
+tags = ["photonic crystal", "slab", "hole lattice", "triangular", "square", "silicon"]
