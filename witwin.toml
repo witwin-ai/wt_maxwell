@@ -28,3 +28,16 @@ python = "${project:python}"
 cancel = true
 partials = true
 query = ["extract_slice", "extract_volume"]
+
+# A Project template (Studio's template cards). The payload is copied as-is;
+# every file is checked against the content manifest, whose sha256 is pinned
+# here. Rebuild both with studio/scripts/build-template-manifest.mjs.
+[[contributes.templates]]
+id = "em-design"
+title = "EM Design"
+description = "A 1 GHz point dipole in a 1.2 m FDTD domain."
+icon = "zap"
+version = "1.0.0"
+dir = "templates/em-design"
+manifest = "template.manifest.json"
+sha256 = "77abf575bd670ee4b527c330c719482af8feeab58b859ea2af40691fd882daf4"

@@ -1,0 +1,15 @@
+format = 2
+id = "main"
+role = "main"
+
+[[entity]]
+id = "point_source"
+name = "Point Source"
+type = "builtin.group"
+components = [{type = "PointDipoleSource", polarization_mode = "Ez", polarization = [0.0, 0.0, 1.0], width = 0.019999999552965164, profile = "gaussian", st_enabled = true, st_kind = "gaussian_pulse", st_frequency = 1000000000.0, st_amplitude = 1.0, st_phase = 0.0, st_fwidth = 200000000.0, st_auto_delay = false, st_delay = 4.7746482323418604e-09}]
+
+[[entity]]
+id = "maxwell_3d_field_demo_1"
+name = "Maxwell Settings"
+type = "builtin.group"
+components = [{type = "MaxwellSolver", dimension = "3D", plane = "XZ", min_bound = [-0.6000000238418579, -0.6000000238418579, -0.6000000238418579], bounds_min = [-0.6000000238418579, -0.6000000238418579, -0.6000000238418579], bounds_max = [0.6000000238418579, 0.6000000238418579, 0.6000000238418579], frequency = 1000000000.0, resolution = [29.0, 29.0, 29.0], max_bound = [0.6000000238418579, 0.6000000238418579, 0.6000000238418579], frequency_dependent_resolution = false, cell_size_lambda = "1位", render_mode = "None", colormap = "inferno", display_range = [0.0, 1.0], log_colormap = false, plane_axis = "XZ", plane_position = 0.5, plane_opacity = 1.0, show_grid = false, opacity_scale = 1.0, density_scale = 1.0, ray_steps = 128.0, cache_in_memory = true, sdf_technique = "sdf", iso_value = 0.0, enable_lighting = true, sdf_ray_steps = 128.0, sdf_cache_in_memory = true, vector_arrow_density = 16.0, vector_arrow_scale = 1.0, vector_arrow_thickness = 1.0, vector_normalize_arrows = false, vector_field_id = "", renderer_debug = false, ppw = "7", uniform = true, dl = 0.03999999910593033, dx = 0.05000000074505806, dy = 0.05000000074505806, dz = 0.05000000074505806, mode = "global", kind = "pml", num_layers = 10.0, strength = 1000000.0, bloch_wavevector = [0.0, 0.0, 0.0], x = "pml", y = "pml", z = "pml", x_low = "pml", x_high = "pml", y_low = "pml", y_high = "pml", z_low = "pml", z_high = "pml", subpixel_uniform = true, subpixel = 1.0, subpixel_x = 1.0, subpixel_y = 1.0, subpixel_z = 1.0, symmetry_x = "none", symmetry_y = "none", symmetry_z = "none", symmetry_x_face = "low", symmetry_y_face = "low", symmetry_z_face = "low", device = "cuda", frequencies = [1000000000.0], method = "fdtd", absorber = "cpml", full_field_dft = true, time_steps_auto = true, time_steps = 1000.0, slice_axis = "z", slice_position = 0.0, component = "Ez", value_mode = "abs", frequency_index = 0.0, log_scale = false, show_3d_field = true}]
