@@ -10,17 +10,17 @@ pip-installed; the server adds the same directory at startup). If the base/solve
 deps are not importable, the round-trip modules are skipped rather than erroring.
 """
 import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
 import pytest
 
-# .../plugins/wt_maxwell/tests -> .../plugins
-PLUGINS_DIR = Path(__file__).resolve().parents[2]
-if str(PLUGINS_DIR) not in sys.path:
-    sys.path.insert(0, str(PLUGINS_DIR))
-
 PKG = "wt_maxwell"
+# Load this checkout as ``wt_maxwell`` whatever its folder is called (a
+# worktree such as ``wt_maxwell-eval``); importing by name from the parent
+# folder would test the sibling ``wt_maxwell`` checkout instead.
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
 try:
     import witwin_server  # noqa: F401
@@ -33,12 +33,17 @@ except ImportError:
 # the geometry-only generator tests (test_generators_*.py) still run.
 if not _DEPS_OK:
     collect_ignore_glob = ["test_m[0-9]_*.py"]
+elif PKG not in sys.modules:
+    _spec = importlib.util.spec_from_file_location(
+        PKG, PLUGIN_ROOT / "__init__.py", submodule_search_locations=[str(PLUGIN_ROOT)])
+    sys.modules[PKG] = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(sys.modules[PKG])
 
 
 @pytest.fixture(scope="session")
 def wtm():
     """Import the plugin package (registers components + the maxwell adapter)."""
-    return importlib.import_module(PKG)
+    return sys.modules[PKG]
 
 
 @pytest.fixture(scope="session")

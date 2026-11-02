@@ -13,7 +13,7 @@ from witwin_server.features.timeline import InterpolationType, TimelineManager
 from witwin_server.features.solvers.scene_ref import load_scene_ref, make_scene_ref
 from witwin_server import SceneObject
 
-from _helpers import approx, assert_config_equal
+from _helpers import approx, assert_config_equal, axis_bounds
 
 
 def _build_scene() -> "mw.Scene":
@@ -186,7 +186,7 @@ def test_plain_studio_mesh_exports_as_maxwell_structure(adapter):
         assert approx(got, expected)
     assert float(structure.material.eps_r.real) == 4.0
     expected_bounds = ((0.0, 0.2), (0.05, 0.35), (0.1, 0.5))
-    for got_axis, expected_axis in zip(structure.geometry.bounds_world, expected_bounds):
+    for got_axis, expected_axis in zip(axis_bounds(structure.geometry), expected_bounds):
         assert approx(got_axis[0], expected_axis[0])
         assert approx(got_axis[1], expected_axis[1])
 
@@ -199,7 +199,7 @@ def test_skinned_mesh_exports_posed_surface(adapter):
     rebuilt = adapter.to_platform(studio)
 
     assert len(rebuilt.structures) == 1
-    bounds = rebuilt.structures[0].geometry.bounds_world
+    bounds = axis_bounds(rebuilt.structures[0].geometry)
     assert approx(bounds[0][0], 1.0)
     assert approx(bounds[0][1], 1.0)
 
@@ -216,7 +216,7 @@ def test_scene_ref_skinned_mesh_prefers_runtime_skin_over_smpl_geometry(adapter)
     rebuilt = adapter.to_platform(restored)
 
     assert len(rebuilt.structures) == 1
-    bounds = rebuilt.structures[0].geometry.bounds_world
+    bounds = axis_bounds(rebuilt.structures[0].geometry)
     assert approx(bounds[0][0], 1.0)
     assert approx(bounds[0][1], 1.0)
 
@@ -246,7 +246,7 @@ def test_scene_ref_skinned_mesh_uses_timeline_current_pose_and_material(adapter)
 
     assert len(rebuilt.structures) == 1
     structure = rebuilt.structures[0]
-    bounds = structure.geometry.bounds_world
+    bounds = axis_bounds(structure.geometry)
     assert approx(bounds[0][0], 2.0)
     assert approx(bounds[0][1], 2.0)
     assert approx(float(structure.material.eps_r.real), 6.5)
@@ -300,7 +300,7 @@ def test_visible_mesh_takes_precedence_over_platform_geometry(adapter):
     assert str(structure.geometry.kind) == "mesh"
     assert float(structure.material.eps_r.real) == 5.0
     expected_bounds = ((-0.2, 0.2), (-0.1, 0.1), (-0.05, 0.05))
-    for got_axis, expected_axis in zip(structure.geometry.bounds_world, expected_bounds):
+    for got_axis, expected_axis in zip(axis_bounds(structure.geometry), expected_bounds):
         assert approx(got_axis[0], expected_axis[0])
         assert approx(got_axis[1], expected_axis[1])
 
@@ -336,7 +336,7 @@ def test_scaled_imported_structure_exports_visual_world_mesh(adapter):
     structure = rebuilt.structures[0]
     assert str(structure.geometry.kind) == "mesh"
     expected_bounds = ((-0.2, 0.2), (-0.1, 0.1), (-0.1, 0.1))
-    for got_axis, expected_axis in zip(structure.geometry.bounds_world, expected_bounds):
+    for got_axis, expected_axis in zip(axis_bounds(structure.geometry), expected_bounds):
         assert approx(got_axis[0], expected_axis[0])
         assert approx(got_axis[1], expected_axis[1])
 
