@@ -80,7 +80,9 @@ def solver_ready(device):
                          grid=mw.GridSpec.uniform(0.15), boundary=mw.BoundarySpec.pml(6), device=device)
         scene.add_source(mw.PointDipole(position=(0.0, 0.0, 0.0), polarization="Ez",
                                         source_time=mw.GaussianPulse(frequency=1e9, fwidth=2e8)))
-        mw.Simulation.fdtd(scene, frequencies=(1e9,), run_time=mw.TimeConfig(time_steps=20)).run()
+        # full_field_dft: a solve with no output is an error, which skipped every live test.
+        mw.Simulation.fdtd(scene, frequencies=(1e9,), full_field_dft=True,
+                           run_time=mw.TimeConfig(time_steps=20)).run()
     except Exception as exc:  # noqa: BLE001 - test gate: needs-user-verification if solver absent
         pytest.skip(f"maxwell solver unavailable in this environment: {exc}")
     return True
