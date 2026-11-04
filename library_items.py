@@ -15,7 +15,26 @@ materials, and components match the round-trip exactly). The factory adds any ex
 objects to the drop scene and returns the primary one (the library handler adds
 that one). Result/runtime state is never part of a prefab.
 """
+import inspect as _inspect
+from pathlib import Path as _Path
+
 from witwin_server import Library
+
+
+_PREVIEWS = _Path(__file__).resolve().parent / "previews" / "library"
+
+
+def _preview(item_id):
+    """The Library card image for an item, as keyword arguments.
+
+    Images are renders from Studio's `scripts/template-previews/library_items.py`.
+    Empty when the file is missing or Studio's `register_item` has no `preview`
+    parameter yet (older Studio), so the card falls back to the item's icon.
+    """
+    path = _PREVIEWS / f"{item_id}.webp"
+    if not path.is_file() or "preview" not in _inspect.signature(Library.register_item).parameters:
+        return {}
+    return {"preview": str(path)}
 
 _CATEGORY = "maxwell"
 _DEFAULT_FREQ = 1e9  # lambda ~0.3 m -> ~7.5 cells/wavelength on the 0.04 m demo grid
@@ -112,19 +131,19 @@ def register() -> None:
     Library.register_category(_CATEGORY, "Maxwell", icon="waves", order=20)
     Library.register_item("maxwell_demo", "Maxwell 3D Field (Demo)", _CATEGORY,
                           icon="sparkles", object_type="empty", factory=_make_demo,
-                          description="Point source at the domain center; Solve to see the 3D field")
+                          description="Point source at the domain center; Solve to see the 3D field", **_preview("maxwell_demo"))
     Library.register_item("maxwell_settings", "Maxwell Settings", _CATEGORY,
                           icon="settings", object_type="empty", factory=_make_settings,
-                          description="Scene config + Solve button (build your own scene)")
+                          description="Scene config + Solve button (build your own scene)", **_preview("maxwell_settings"))
     Library.register_item("maxwell_box", "Dielectric Box", _CATEGORY,
                           icon="box", object_type="mesh", factory=_make_box,
-                          description="A box structure with an EM material")
+                          description="A box structure with an EM material", **_preview("maxwell_box"))
     Library.register_item("maxwell_dipole", "Dipole Source", _CATEGORY,
                           icon="radio", object_type="empty", factory=_make_dipole,
-                          description="Point dipole source (CW)")
+                          description="Point dipole source (CW)", **_preview("maxwell_dipole"))
     Library.register_item("maxwell_plane_monitor", "Plane Monitor", _CATEGORY,
                           icon="scan", object_type="empty", factory=_make_plane_monitor,
-                          description="Axis-aligned field monitor plane")
+                          description="Axis-aligned field monitor plane", **_preview("maxwell_plane_monitor"))
 
 
 register()
