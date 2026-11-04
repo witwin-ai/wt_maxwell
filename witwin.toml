@@ -43,6 +43,12 @@ maxParallel = 1
 [contributes.solvers.runtime]
 python = "${project:python}"
 
+# Hardware one solve needs (remote-solver plan R0). FDTD runs its Slang
+# kernels on CUDA, compiled at run time, so no architecture is pinned.
+[contributes.solvers.resources]
+gpu = 1
+min_vram_gb = 8
+
 [contributes.solvers.capabilities]
 cancel = true
 partials = true
