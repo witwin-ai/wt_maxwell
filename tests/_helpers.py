@@ -254,3 +254,13 @@ def assert_config_equal(s1: Any, s2: Any) -> None:
     assert tuple(s1.subpixel_samples) == tuple(s2.subpixel_samples), "subpixel"
     assert tuple(s1.symmetry or (None, None, None)) == tuple(s2.symmetry or (None, None, None)), "symmetry"
     assert str(s1.device) == str(s2.device), "device"
+
+
+def axis_bounds(geometry: Any) -> list:
+    """World bounds per axis, ``[(xmin, xmax), (ymin, ymax), (zmin, zmax)]``.
+
+    ``witwin.core`` returns ``bounds_world`` as ``(min corner, max corner)``;
+    the tests read it per axis.
+    """
+    lo, hi = geometry.bounds_world
+    return [(lo[i], hi[i]) for i in range(3)]

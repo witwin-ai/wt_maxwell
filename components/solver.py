@@ -298,11 +298,7 @@ class MaxwellSolverComponent(FieldComponent):
             return None
         if str(self.device) == "cpu":
             Notifications.warning("Maxwell", "Solving on CPU; large simulations require CUDA")
-        return SolveConfig(
-            method=str(self.method), frequencies=freqs,
-            absorber=str(self.absorber),
-            full_field_dft=True,
-            time_steps=None if bool(self.time_steps_auto) else int(self.time_steps))
+        return SolveConfig.from_component(self)
 
     def set_field(self, field_name: str, value, *, silent: bool = False, force: bool = False):
         super().set_field(field_name, value, silent=silent, force=force)

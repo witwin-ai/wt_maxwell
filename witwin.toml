@@ -1,11 +1,11 @@
 id = "witwin.maxwell"
 name = "Maxwell"
-version = "0.1.0"
+version = "0.1.1"
 author = ""
 description = "FDTD electromagnetic field solver with 2D/3D visualization."
 license = "GPL-3.0-or-later"
 repository = "https://github.com/witwin-ai/wt_maxwell"
-dependencies = ["witwin[maxwell]", "scipy", "numpy"]
+dependencies = ["witwin-maxwell>=0.5.1,<0.6", "witwin>=0.4,<0.5", "scipy", "numpy"]
 icon = "waves"
 enabled = true
 # test_m4_solve shows a field with the Volume Plugin's VolumeRenderer when it is installed.
@@ -43,8 +43,10 @@ maxParallel = 1
 [contributes.solvers.runtime]
 python = "${project:python}"
 
-# Hardware one solve needs (remote-solver plan R0). FDTD runs its Slang
-# kernels on CUDA, compiled at run time, so no architecture is pinned.
+# Hardware one solve needs (remote-solver plan R0). FDTD runs native CUDA
+# kernels; witwin-maxwell 0.5 wheels carry one prebuilt binary per platform
+# for every SM from sm_70 (a source checkout builds it on first use), so no
+# architecture is pinned.
 [contributes.solvers.resources]
 gpu = 1
 min_vram_gb = 8
@@ -60,18 +62,19 @@ query = ["extract_slice", "extract_volume"]
 [[contributes.templates]]
 id = "em-design"
 title = "EM Design"
-description = "A 1 GHz point dipole in a 1.2 m FDTD domain."
+description = "A 1 GHz point dipole beside a dielectric block in a 1.6 m FDTD domain."
 icon = "zap"
-version = "1.0.0"
+version = "1.1.1"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
-sha256 = "77abf575bd670ee4b527c330c719482af8feeab58b859ea2af40691fd882daf4"
+sha256 = "82875f1f988e9e1062420259156dd2e6ee3c1fbc4bacaeac8174d169c2e97efd"
 
 # Generators: antennas and arrays
 # Model files (models/antennas/<name>.py) that build parametric antenna geometry;
 # design formulas and conventions: docs/GENERATORS_ANTENNAS.md.
 [[contributes.models]]
 id = "witwin.maxwell.antenna.patch"
+preview = "previews/library/witwin.maxwell.antenna.patch.webp"
 path = "models/antennas/patch.py"
 title = "Rectangular patch (inset feed)"
 category = "Antennas"
@@ -79,6 +82,7 @@ tags = ["patch", "microstrip", "inset feed", "broadside", "balanis"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.patch_probe"
+preview = "previews/library/witwin.maxwell.antenna.patch_probe.webp"
 path = "models/antennas/patch_probe.py"
 title = "Rectangular patch (coax probe)"
 category = "Antennas"
@@ -86,6 +90,7 @@ tags = ["patch", "coax probe", "broadside", "balanis"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.circular_patch"
+preview = "previews/library/witwin.maxwell.antenna.circular_patch.webp"
 path = "models/antennas/circular_patch.py"
 title = "Circular patch (coax probe)"
 category = "Antennas"
@@ -93,6 +98,7 @@ tags = ["patch", "circular", "coax probe", "broadside"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.aperture_coupled_patch"
+preview = "previews/library/witwin.maxwell.antenna.aperture_coupled_patch.webp"
 path = "models/antennas/aperture_coupled_patch.py"
 title = "Aperture-coupled patch"
 category = "Antennas"
@@ -100,6 +106,7 @@ tags = ["patch", "aperture coupled", "slot", "two substrates"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.dipole"
+preview = "previews/library/witwin.maxwell.antenna.dipole.webp"
 path = "models/antennas/dipole.py"
 title = "Half-wave dipole"
 category = "Antennas"
@@ -107,6 +114,7 @@ tags = ["dipole", "wire", "strip", "induced emf"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.monopole"
+preview = "previews/library/witwin.maxwell.antenna.monopole.webp"
 path = "models/antennas/monopole.py"
 title = "Quarter-wave monopole"
 category = "Antennas"
@@ -114,6 +122,7 @@ tags = ["monopole", "wire", "ground plane"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.pifa"
+preview = "previews/library/witwin.maxwell.antenna.pifa.webp"
 path = "models/antennas/pifa.py"
 title = "PIFA"
 category = "Antennas"
@@ -121,6 +130,7 @@ tags = ["pifa", "planar inverted-f", "shorting plate", "mobile"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.ifa"
+preview = "previews/library/witwin.maxwell.antenna.ifa.webp"
 path = "models/antennas/ifa.py"
 title = "Printed inverted-F antenna"
 category = "Antennas"
@@ -128,6 +138,7 @@ tags = ["ifa", "inverted-f", "printed", "pcb"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.yagi"
+preview = "previews/library/witwin.maxwell.antenna.yagi.webp"
 path = "models/antennas/yagi.py"
 title = "Yagi-Uda"
 category = "Antennas"
@@ -135,6 +146,7 @@ tags = ["yagi", "end-fire", "wire", "directors"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.lpda"
+preview = "previews/library/witwin.maxwell.antenna.lpda.webp"
 path = "models/antennas/lpda.py"
 title = "Log-periodic dipole array"
 category = "Antennas"
@@ -142,6 +154,7 @@ tags = ["lpda", "log-periodic", "broadband", "carrel"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.helix"
+preview = "previews/library/witwin.maxwell.antenna.helix.webp"
 path = "models/antennas/helix.py"
 title = "Axial-mode helix"
 category = "Antennas"
@@ -149,6 +162,7 @@ tags = ["helix", "axial mode", "circular polarization", "kraus"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.spiral"
+preview = "previews/library/witwin.maxwell.antenna.spiral.webp"
 path = "models/antennas/spiral.py"
 title = "Archimedean spiral"
 category = "Antennas"
@@ -156,6 +170,7 @@ tags = ["spiral", "archimedean", "broadband", "circular polarization"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.pyramidal_horn"
+preview = "previews/library/witwin.maxwell.antenna.pyramidal_horn.webp"
 path = "models/antennas/pyramidal_horn.py"
 title = "Pyramidal horn (optimum gain)"
 category = "Antennas"
@@ -163,6 +178,7 @@ tags = ["horn", "pyramidal", "waveguide", "high gain"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.conical_horn"
+preview = "previews/library/witwin.maxwell.antenna.conical_horn.webp"
 path = "models/antennas/conical_horn.py"
 title = "Conical horn (optimum gain)"
 category = "Antennas"
@@ -170,6 +186,7 @@ tags = ["horn", "conical", "circular waveguide"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.corrugated_horn"
+preview = "previews/library/witwin.maxwell.antenna.corrugated_horn.webp"
 path = "models/antennas/corrugated_horn.py"
 title = "Corrugated conical horn"
 category = "Antennas"
@@ -177,6 +194,7 @@ tags = ["horn", "corrugated", "low cross-pol", "hybrid mode"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.vivaldi"
+preview = "previews/library/witwin.maxwell.antenna.vivaldi.webp"
 path = "models/antennas/vivaldi.py"
 title = "Vivaldi (tapered slot)"
 category = "Antennas"
@@ -184,6 +202,7 @@ tags = ["vivaldi", "tapered slot", "ultra-wideband", "end-fire"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.slot"
+preview = "previews/library/witwin.maxwell.antenna.slot.webp"
 path = "models/antennas/slot.py"
 title = "Half-wave slot"
 category = "Antennas"
@@ -191,6 +210,7 @@ tags = ["slot", "babinet", "ground plane"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.reflector"
+preview = "previews/library/witwin.maxwell.antenna.reflector.webp"
 path = "models/antennas/reflector.py"
 title = "Prime-focus parabolic reflector"
 category = "Antennas"
@@ -198,6 +218,7 @@ tags = ["reflector", "parabolic", "dish", "high gain"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.linear_array"
+preview = "previews/library/witwin.maxwell.antenna.linear_array.webp"
 path = "models/antennas/linear_array.py"
 title = "Linear array"
 category = "Antennas"
@@ -205,6 +226,7 @@ tags = ["array", "linear", "corporate feed", "uniform"]
 
 [[contributes.models]]
 id = "witwin.maxwell.antenna.planar_array"
+preview = "previews/library/witwin.maxwell.antenna.planar_array.webp"
 path = "models/antennas/planar_array.py"
 title = "Planar array (rectangular or triangular lattice)"
 category = "Antennas"
@@ -215,6 +237,7 @@ tags = ["array", "planar", "triangular lattice", "rectangular lattice"]
 # design formulas and conventions: docs/GENERATORS_LINES.md.
 [[contributes.models]]
 id = "witwin.maxwell.line.microstrip"
+preview = "previews/library/witwin.maxwell.line.microstrip.webp"
 path = "models/lines/microstrip.py"
 title = "Microstrip line"
 category = "Transmission lines"
@@ -222,6 +245,7 @@ tags = ["microstrip", "50 ohm", "pcb", "hammerstad-jensen"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.stripline"
+preview = "previews/library/witwin.maxwell.line.stripline.webp"
 path = "models/lines/stripline.py"
 title = "Stripline"
 category = "Transmission lines"
@@ -229,6 +253,7 @@ tags = ["stripline", "50 ohm", "pcb"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.cpw"
+preview = "previews/library/witwin.maxwell.line.cpw.webp"
 path = "models/lines/cpw.py"
 title = "Coplanar waveguide"
 category = "Transmission lines"
@@ -236,6 +261,7 @@ tags = ["cpw", "coplanar", "50 ohm"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.grounded_cpw"
+preview = "previews/library/witwin.maxwell.line.grounded_cpw.webp"
 path = "models/lines/grounded_cpw.py"
 title = "Grounded coplanar waveguide"
 category = "Transmission lines"
@@ -243,6 +269,7 @@ tags = ["gcpw", "cbcpw", "coplanar", "via fence", "50 ohm"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.coax"
+preview = "previews/library/witwin.maxwell.line.coax.webp"
 path = "models/lines/coax.py"
 title = "Coaxial line"
 category = "Transmission lines"
@@ -250,6 +277,7 @@ tags = ["coax", "ptfe", "50 ohm"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.rect_waveguide"
+preview = "previews/library/witwin.maxwell.line.rect_waveguide.webp"
 path = "models/lines/rect_waveguide.py"
 title = "Rectangular waveguide"
 category = "Transmission lines"
@@ -257,6 +285,7 @@ tags = ["waveguide", "wr-90", "te10"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.waveguide_bend_e"
+preview = "previews/library/witwin.maxwell.line.waveguide_bend_e.webp"
 path = "models/lines/waveguide_bend_e.py"
 title = "Waveguide E-plane bend"
 category = "Transmission lines"
@@ -264,6 +293,7 @@ tags = ["waveguide", "bend", "e-plane"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.waveguide_bend_h"
+preview = "previews/library/witwin.maxwell.line.waveguide_bend_h.webp"
 path = "models/lines/waveguide_bend_h.py"
 title = "Waveguide H-plane bend"
 category = "Transmission lines"
@@ -271,6 +301,7 @@ tags = ["waveguide", "bend", "h-plane"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.waveguide_tee"
+preview = "previews/library/witwin.maxwell.line.waveguide_tee.webp"
 path = "models/lines/waveguide_tee.py"
 title = "Waveguide T-junction"
 category = "Transmission lines"
@@ -278,6 +309,7 @@ tags = ["waveguide", "tee", "e-plane", "h-plane", "junction"]
 
 [[contributes.models]]
 id = "witwin.maxwell.line.circular_waveguide"
+preview = "previews/library/witwin.maxwell.line.circular_waveguide.webp"
 path = "models/lines/circular_waveguide.py"
 title = "Circular waveguide"
 category = "Transmission lines"
@@ -285,6 +317,7 @@ tags = ["waveguide", "circular", "te11"]
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.coupled_microstrip"
+preview = "previews/library/witwin.maxwell.passive.coupled_microstrip.webp"
 path = "models/passives/coupled_microstrip.py"
 title = "Coupled microstrip lines"
 category = "Passives"
@@ -292,6 +325,7 @@ tags = ["coupled lines", "directional coupler", "even odd mode", "microstrip"]
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.stub"
+preview = "previews/library/witwin.maxwell.passive.stub.webp"
 path = "models/passives/stub.py"
 title = "Open or shorted stub"
 category = "Passives"
@@ -299,6 +333,7 @@ tags = ["stub", "open stub", "short stub", "quarter wave", "microstrip"]
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.stepped_impedance_lpf"
+preview = "previews/library/witwin.maxwell.passive.stepped_impedance_lpf.webp"
 path = "models/passives/stepped_impedance_lpf.py"
 title = "Stepped-impedance low-pass filter"
 category = "Passives"
@@ -306,6 +341,7 @@ tags = ["filter", "low-pass", "stepped impedance", "butterworth", "chebyshev", "
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.hairpin_bpf"
+preview = "previews/library/witwin.maxwell.passive.hairpin_bpf.webp"
 path = "models/passives/hairpin_bpf.py"
 title = "Hairpin band-pass filter"
 category = "Passives"
@@ -313,6 +349,7 @@ tags = ["filter", "band-pass", "hairpin", "coupled resonator", "microstrip"]
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.wilkinson"
+preview = "previews/library/witwin.maxwell.passive.wilkinson.webp"
 path = "models/passives/wilkinson.py"
 title = "Wilkinson power divider"
 category = "Passives"
@@ -320,6 +357,7 @@ tags = ["power divider", "wilkinson", "splitter", "microstrip"]
 
 [[contributes.models]]
 id = "witwin.maxwell.passive.branch_line"
+preview = "previews/library/witwin.maxwell.passive.branch_line.webp"
 path = "models/passives/branch_line.py"
 title = "Branch-line coupler"
 category = "Passives"
@@ -327,6 +365,7 @@ tags = ["hybrid", "90 degree", "quadrature", "branch line", "coupler", "microstr
 
 [[contributes.models]]
 id = "witwin.maxwell.connector.sma_edge"
+preview = "previews/library/witwin.maxwell.connector.sma_edge.webp"
 path = "models/connectors/sma_edge.py"
 title = "SMA edge-launch connector"
 category = "Connectors"
@@ -334,6 +373,7 @@ tags = ["sma", "edge launch", "end launch", "coax", "50 ohm"]
 
 [[contributes.models]]
 id = "witwin.maxwell.package.qfn"
+preview = "previews/library/witwin.maxwell.package.qfn.webp"
 path = "models/packages/qfn.py"
 title = "QFN package"
 category = "Packages"
@@ -341,6 +381,7 @@ tags = ["qfn", "exposed pad", "leads", "ic package"]
 
 [[contributes.models]]
 id = "witwin.maxwell.package.bga"
+preview = "previews/library/witwin.maxwell.package.bga.webp"
 path = "models/packages/bga.py"
 title = "BGA package"
 category = "Packages"
@@ -348,6 +389,7 @@ tags = ["bga", "solder balls", "ic package"]
 
 [[contributes.models]]
 id = "witwin.maxwell.package.wire_bond"
+preview = "previews/library/witwin.maxwell.package.wire_bond.webp"
 path = "models/packages/wire_bond.py"
 title = "Wire bond"
 category = "Packages"
@@ -355,6 +397,7 @@ tags = ["wire bond", "bond wire", "jedec", "ball bond"]
 
 [[contributes.models]]
 id = "witwin.maxwell.periodic.square_loop"
+preview = "previews/library/witwin.maxwell.periodic.square_loop.webp"
 path = "models/periodic/square_loop.py"
 title = "Square-loop unit cell"
 category = "Periodic structures"
@@ -362,6 +405,7 @@ tags = ["metasurface", "fss", "square loop", "unit cell", "floquet"]
 
 [[contributes.models]]
 id = "witwin.maxwell.periodic.jerusalem_cross"
+preview = "previews/library/witwin.maxwell.periodic.jerusalem_cross.webp"
 path = "models/periodic/jerusalem_cross.py"
 title = "Jerusalem-cross unit cell"
 category = "Periodic structures"
@@ -369,6 +413,7 @@ tags = ["metasurface", "fss", "jerusalem cross", "unit cell", "floquet"]
 
 [[contributes.models]]
 id = "witwin.maxwell.periodic.split_ring"
+preview = "previews/library/witwin.maxwell.periodic.split_ring.webp"
 path = "models/periodic/split_ring.py"
 title = "Split-ring resonator cell"
 category = "Periodic structures"
@@ -376,6 +421,7 @@ tags = ["metamaterial", "srr", "split ring", "unit cell", "floquet"]
 
 [[contributes.models]]
 id = "witwin.maxwell.periodic.fss_cell"
+preview = "previews/library/witwin.maxwell.periodic.fss_cell.webp"
 path = "models/periodic/fss_cell.py"
 title = "FSS patch / aperture cell"
 category = "Periodic structures"
@@ -383,6 +429,7 @@ tags = ["fss", "patch", "aperture", "babinet", "unit cell", "floquet"]
 
 [[contributes.models]]
 id = "witwin.maxwell.periodic.photonic_crystal_slab"
+preview = "previews/library/witwin.maxwell.periodic.photonic_crystal_slab.webp"
 path = "models/periodic/photonic_crystal_slab.py"
 title = "Photonic crystal slab"
 category = "Periodic structures"

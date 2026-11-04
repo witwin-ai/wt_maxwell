@@ -58,7 +58,8 @@ def test_solver_host_does_not_probe_mesh_sdf_before_serve():
         for func in module_calls
     ]
 
-    assert "_ensure_mesh_sdf_native_ready" not in call_names
+    assert "_warn_if_mesh_sdf_slow" not in call_names
+    assert "_ensure_mesh_sdf_runtime_env" not in call_names
 
 
 def test_fdtd_roundtrip_runs(adapter, solve_mod, device, solver_ready):
@@ -328,36 +329,60 @@ def test_mesh_sdf_runtime_env_adds_conda_and_cuda_paths(solve_mod, monkeypatch, 
     assert str(cuda / "include") in os.environ["INCLUDE"]
 
 
-def test_mesh_sdf_native_ready_adds_env_and_requires_available_module(solve_mod, monkeypatch):
+def test_mesh_sdf_probe_reports_the_accelerator(solve_mod, monkeypatch):
     from witwin.core.geometry import mesh_sdf
 
-    calls = []
-
-    def native_available():
-        calls.append("probe")
-        return True
-
-    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_available)
-
-    solve_mod._ensure_mesh_sdf_native_ready()
-
-    assert calls == ["env", "probe"]
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", lambda: True)
+    assert solve_mod._warn_if_mesh_sdf_slow() is True
 
 
-def test_mesh_sdf_native_ready_raises_when_module_unavailable(solve_mod, monkeypatch):
+def test_mesh_sdf_probe_warns_once_and_lets_the_solve_run(solve_mod, monkeypatch):
+    # witwin-maxwell 0.5 ships no mesh SDF accelerator; witwin.core then uses
+    # its torch path, so a missing accelerator must not stop the solve.
     from witwin.core.geometry import mesh_sdf
 
-    calls = []
+    warnings = []
+    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", lambda: False)
+    monkeypatch.setattr(solve_mod, "_MESH_SDF_WARNED", False)
+    monkeypatch.setattr(solve_mod.logger, "warning", warnings.append)
 
-    def native_unavailable():
-        calls.append("probe")
-        return False
+    assert solve_mod._warn_if_mesh_sdf_slow() is False
+    assert solve_mod._warn_if_mesh_sdf_slow() is False
+    assert len(warnings) == 1
 
-    monkeypatch.setattr(solve_mod, "_ensure_mesh_sdf_runtime_env", lambda: calls.append("env"))
-    monkeypatch.setattr(mesh_sdf, "_mesh_sdf_available", native_unavailable)
 
-    with pytest.raises(RuntimeError, match="Native CUDA mesh SDF module is not available"):
-        solve_mod._ensure_mesh_sdf_native_ready()
+class _StubSimulation:
+    def run(self):
+        return "result"
 
-    assert calls == ["env", "probe"]
+
+def test_run_skips_mesh_sdf_probe_without_mesh_structures(adapter, solve_mod, monkeypatch):
+    # A box-only scene never needs the CUDA mesh SDF; the probe used to run
+    # before ``import witwin.maxwell`` registered the accelerator and failed every solve.
+    studio = adapter.to_studio(_scene("cuda").clone(structures=[]))
+
+    def probe():
+        raise AssertionError("mesh SDF probed for a scene without meshes")
+
+    monkeypatch.setattr(solve_mod, "_warn_if_mesh_sdf_slow", probe)
+    monkeypatch.setattr(solve_mod.SolveRunner, "build", staticmethod(lambda scene, config: _StubSimulation()))
+
+    assert solve_mod.SolveRunner.run(studio, solve_mod.SolveConfig(frequencies=(1e9,))) == "result"
+
+
+def test_solve_config_for_scene_reads_the_solver_component(adapter, solve_mod):
+    # ``witwin solve`` sends no config: the scene's MaxwellSolver settings apply.
+    studio = adapter.to_studio(_scene("cuda"))
+    settings = next(obj for obj in studio.objects.values() if obj.name == "Maxwell Settings")
+    solver = settings.get_component("MaxwellSolver")
+    solver.frequencies = [1e9, 2e9]
+    solver.time_steps_auto = False
+    solver.time_steps = 321
+
+    config = solve_mod.SolveConfig.for_scene(studio, {})
+    assert config.frequencies == (1e9, 2e9)
+    assert config.time_steps == 321
+
+    override = solve_mod.SolveConfig.for_scene(studio, {"frequencies": [3e9], "time_steps": None})
+    assert override.frequencies == (3e9,)
+    assert override.time_steps == 321

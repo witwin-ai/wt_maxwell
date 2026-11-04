@@ -15,8 +15,11 @@ import sys
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
+from witwin_server.api import get_logger
 
 from .maxwell_adapter import MaxwellAdapter
+
+logger = get_logger("MaxwellSolve")
 
 
 @dataclass
@@ -28,6 +31,40 @@ class SolveConfig:
     absorber: str = "cpml"               # FDTD: "cpml" | "pml"
     full_field_dft: bool = False         # FDTD
     time_steps: Optional[int] = None     # FDTD: None = auto
+
+    @classmethod
+    def from_component(cls, comp: Any) -> "SolveConfig":
+        """Read a MaxwellSolver component; the Studio button and ``witwin solve`` both use it."""
+        from .common import num
+
+        return cls(
+            method=str(comp.method),
+            frequencies=tuple(num(f) for f in (comp.frequencies or ())),
+            absorber=str(comp.absorber),
+            full_field_dft=True,
+            time_steps=None if bool(comp.time_steps_auto) else int(num(comp.time_steps)),
+        )
+
+    @classmethod
+    def for_scene(cls, studio_scene: Any, overrides: Optional[dict] = None) -> "SolveConfig":
+        """The scene's MaxwellSolver settings, with explicit ``overrides`` winning.
+
+        A headless solve (``project.solve``) sends no config, so the scene is
+        the source of truth; the Studio button sends the same fields explicitly.
+        """
+        settings = MaxwellAdapter._find_settings(studio_scene)
+        comp = settings.get_component("MaxwellSolver") if settings is not None else None
+        base = cls.from_component(comp) if comp is not None else cls()
+        for key, value in (overrides or {}).items():
+            if value is None or value == () or value == []:
+                continue
+            if key == "frequencies":
+                value = tuple(float(v) for v in value)
+            elif key == "time_steps":
+                value = int(value)
+            if hasattr(base, key):
+                setattr(base, key, value)
+        return base
 
 
 @dataclass
@@ -58,29 +95,43 @@ class SolveRunner:
     @staticmethod
     def run(studio_scene: Any, config: SolveConfig) -> Any:
         """Rebuild the platform scene from the studio scene and run the solve."""
-        _ensure_mesh_sdf_native_ready()
+        _ensure_mesh_sdf_runtime_env()
         platform_scene = MaxwellAdapter().to_platform(studio_scene)
+        if any(str(s.geometry.kind) == "mesh" for s in platform_scene.structures):
+            _warn_if_mesh_sdf_slow()
         return SolveRunner.build(platform_scene, config).run()
 
 
-def _ensure_mesh_sdf_native_ready() -> None:
-    """Expose runtime paths and fail early if the native CUDA mesh SDF module is absent."""
-    try:
-        from witwin.core.geometry import mesh_sdf
-    except Exception:
-        return
+def _warn_if_mesh_sdf_slow() -> bool:
+    """Log once when mesh structures will voxelize on the torch path.
 
-    _ensure_mesh_sdf_runtime_env()
+    ``witwin.core`` falls back to a torch mesh SDF when no accelerator is
+    registered; witwin-maxwell 0.5 ships none, so the solve still runs, only
+    slower. ``import witwin.maxwell`` registers an accelerator in builds that
+    have one, and ``to_platform`` has done that import by the time this runs.
+    Returns True when the accelerator is present.
+    """
+    global _MESH_SDF_WARNED
+    from witwin.core.geometry import mesh_sdf
+
     if mesh_sdf._mesh_sdf_available():
-        return
-    raise RuntimeError(
-        "Native CUDA mesh SDF module is not available. "
-        + _mesh_sdf_native_diagnostics(mesh_sdf)
-    )
+        return True
+    if not _MESH_SDF_WARNED:
+        _MESH_SDF_WARNED = True
+        logger.warning("No CUDA mesh SDF accelerator; mesh structures use the slower torch path. "
+                       + _mesh_sdf_native_diagnostics(mesh_sdf))
+    return False
+
+
+_MESH_SDF_WARNED = False
 
 
 def _ensure_mesh_sdf_runtime_env() -> None:
-    """Expose conda/CUDA paths the native CUDA mesh SDF JIT build needs (nvcc + linker)."""
+    """Expose conda/CUDA paths the CUDA JIT builds (FDTD extension, mesh SDF) need: nvcc + linker.
+
+    The solver child calls this through ``SolveRunner.run``; there is no
+    second copy in ``solver_host``.
+    """
     env_prefix = Path(sys.executable).resolve().parent
     if (env_prefix / "python.exe").exists():
         conda_prefix = env_prefix

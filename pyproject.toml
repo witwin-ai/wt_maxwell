@@ -26,9 +26,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# witwin-maxwell 0.5.1 is the release the cloud image carries (Studio
+# server/machine-platform.in); it needs witwin >=0.4,<0.5 and torch >=2.10.
+# Not "witwin[maxwell]": witwin 0.4.0's maxwell extra still pins
+# witwin-maxwell <0.3.
 solve = [
-  "witwin[maxwell]>=0.4",
-  "torch>=2.4",
+  "witwin-maxwell>=0.5.1,<0.6",
+  "witwin>=0.4,<0.5",
+  "torch>=2.10",
 ]
 
 [project.entry-points."witwin.plugins"]
@@ -43,6 +48,7 @@ Repository = "https://github.com/witwin-ai/wt_maxwell"
 [tool.uv.sources]
 witwin-studio = { index = "witwin" }
 witwin = { index = "witwin" }
+witwin-maxwell = { index = "witwin" }
 
 [[tool.uv.index]]
 name = "witwin"

@@ -37,9 +37,12 @@ print(list(scene.objects))
 ## What is in the Scene
 
 `scenes/main.wtscene` is the Maxwell plugin's 3D field demo: `Maxwell
-Settings` holds the FDTD domain (1.2 m cube, 4 cm grid, PML boundary) and the
-1 GHz solve frequency, and `Point Source` is a z-polarised dipole with a
-Gaussian pulse at the domain centre.
+Settings` holds the FDTD domain (1.6 m cube, 4 cm grid, a 10-cell PML on every
+face, so 0.8 m of free space) and the 1 GHz solve frequency, and `Point
+Source` is a z-polarised dipole with a Gaussian pulse at the domain centre.
+`Dielectric Block` is a 0.24 m cube of relative permittivity 4 beside the
+dipole; it scatters the field, and you can delete it or replace it with your
+own geometry.
 
 ## Solve
 

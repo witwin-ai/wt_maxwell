@@ -24,3 +24,9 @@ def test_source_frequency_matches_the_solve_frequency():
 def test_prepare_script_reports_ready(capsys):
     assert load_script().main([]) == 0
     assert "Ready to solve" in capsys.readouterr().out
+
+
+def test_scene_opens_on_the_bench_stage():
+    # A 1.6 m FDTD domain is device scale; World would show it as a speck.
+    header = (PROJECT / "scenes" / "main.wtscene").read_text(encoding="utf-8").split("[[entity]]", 1)[0]
+    assert 'stage = "bench"' in header
