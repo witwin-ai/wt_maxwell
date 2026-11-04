@@ -64,10 +64,10 @@ id = "em-design"
 title = "EM Design"
 description = "A 1 GHz point dipole beside a dielectric block in a 1.6 m FDTD domain."
 icon = "zap"
-version = "1.1.1"
+version = "1.2.0"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
-sha256 = "82875f1f988e9e1062420259156dd2e6ee3c1fbc4bacaeac8174d169c2e97efd"
+sha256 = "38d015021165618cfe49ee44568e653d3dea91a2dc5b88c01598396461c1655e"
 
 # Generators: antennas and arrays
 # Model files (models/antennas/<name>.py) that build parametric antenna geometry;
