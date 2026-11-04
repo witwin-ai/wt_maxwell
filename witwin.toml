@@ -1,11 +1,11 @@
 id = "witwin.maxwell"
 name = "Maxwell"
-version = "0.1.0"
+version = "0.1.1"
 author = ""
 description = "FDTD electromagnetic field solver with 2D/3D visualization."
 license = "GPL-3.0-or-later"
 repository = "https://github.com/witwin-ai/wt_maxwell"
-dependencies = ["witwin[maxwell]", "scipy", "numpy"]
+dependencies = ["witwin-maxwell>=0.5.1,<0.6", "witwin>=0.4,<0.5", "scipy", "numpy"]
 icon = "waves"
 enabled = true
 
@@ -48,10 +48,10 @@ id = "em-design"
 title = "EM Design"
 description = "A 1 GHz point dipole beside a dielectric block in a 1.6 m FDTD domain."
 icon = "zap"
-version = "1.1.0"
+version = "1.1.1"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
-sha256 = "feab00e95fadf2741bca3dbcdb7306fd5a1673fc3507f237f94c68580754a24f"
+sha256 = "82875f1f988e9e1062420259156dd2e6ee3c1fbc4bacaeac8174d169c2e97efd"
 
 # Generators: antennas and arrays
 # Model files (models/antennas/<name>.py) that build parametric antenna geometry;
