@@ -23,7 +23,7 @@ witwin = "^2.0.0"
 [web]
 root = "web"
 
-# Sources, monitors, mode planes and the PML boundary in the viewport.
+# Sources, monitors, ports, boundaries, design regions and their handles in the viewport.
 [contributes.viewport.host]
 entry = "viewport.js"
 sdkVersion = "2.0.0"

@@ -1,19 +1,32 @@
-import type * as ThreeTypes from 'three';
-import { React, THREE } from './runtime';
-import type { HostSceneObject, SceneService } from '@witwin/host';
+import { React } from './runtime';
+import type { HostSceneObject, SceneService, ViewportStage, ViewportStagePalette } from '@witwin/host';
 
 /*
- * Shared look of the Maxwell scene annotations: colours, sizes relative to
- * the simulation domain, length labels, and component lookup.
+ * Shared look of the Maxwell scene annotations: role colours from the
+ * stage palette, sizes relative to the simulation domain, length and
+ * frequency labels, and component lookup.
  *
- * Colours follow the usual EM-design convention: sources blue, monitors
- * green and dashed, the PML boundary a neutral dashed grey. They are 3D
- * annotation colours, so they are literals rather than theme tokens.
+ * Colours come from the host's stage palette by role: sources are
+ * `emitter`, monitors `sensor`, the boundary `boundary`, design regions
+ * `region`. FALLBACK_PALETTE is only for hosts from before the palette.
  */
 
-export const SOURCE_COLOR = '#2f7fe0'; /* allow-color: 3D source annotation */
-export const MONITOR_COLOR = '#2fa565'; /* allow-color: 3D monitor annotation */
-export const PML_COLOR = '#8f959c'; /* allow-color: 3D PML boundary annotation */
+/** Hosts without the stage palette: the values of Studio's dark Bench palette. */
+const FALLBACK_PALETTE: ViewportStagePalette = {
+  background: '#434345', /* allow-color: 3D fallback for hosts without the stage palette */
+  edge: '#d4d4d8', /* allow-color: 3D fallback */
+  text: '#f4f4f5', /* allow-color: 3D fallback */
+  accent: '#0066cc', /* allow-color: 3D fallback */
+  emitter: '#fb923c', /* allow-color: 3D fallback */
+  sensor: '#4ade80', /* allow-color: 3D fallback */
+  boundary: '#a1a1aa', /* allow-color: 3D fallback */
+  region: '#a78bfa', /* allow-color: 3D fallback */
+  warning: '#f87171', /* allow-color: 3D fallback */
+};
+
+export function paletteOf(stage: ViewportStage | undefined): ViewportStagePalette {
+  return stage?.palette ?? FALLBACK_PALETTE;
+}
 
 export type Vec3 = [number, number, number];
 
@@ -32,19 +45,35 @@ export function vec3(component: any, name: string, fallback: Vec3): Vec3 {
   return Array.isArray(v) && v.length >= 3 ? [Number(v[0]), Number(v[1]), Number(v[2])] : fallback;
 }
 
+/** An object's position in its parent's frame; the composed object may carry a three Vector3 or an array. */
+export function positionOf(object: HostSceneObject | undefined): Vec3 {
+  const p = (object as { transform?: { position?: unknown } } | undefined)?.transform?.position as any;
+  if (Array.isArray(p)) return [Number(p[0]) || 0, Number(p[1]) || 0, Number(p[2]) || 0];
+  if (p && typeof p === 'object') return [Number(p.x) || 0, Number(p.y) || 0, Number(p.z) || 0];
+  return [0, 0, 0];
+}
+
 export interface Domain {
+  /** Scene coordinates, metres: the solver object's position plus its bounds, as the solve builds it. */
   min: Vec3;
   max: Vec3;
   /** Largest side, metres: the scale for arrows, markers and dashes. */
   extent: number;
+  /** False when the scene has no MaxwellSolver (a 2 m cube stands in). */
+  real: boolean;
 }
 
-const DEFAULT_DOMAIN: Domain = { min: [-1, -1, -1], max: [1, 1, 1], extent: 2 };
+const DEFAULT_DOMAIN: Domain = { min: [-1, -1, -1], max: [1, 1, 1], extent: 2, real: false };
 
 function domainKey(scene: SceneService): string {
   for (const object of Object.values(scene.getObjects())) {
     const solver = findComponent(object, 'MaxwellSolver');
-    if (solver) return JSON.stringify([vec3(solver, 'min_bound', [-1, -1, -1]), vec3(solver, 'max_bound', [1, 1, 1])]);
+    if (!solver) continue;
+    // adapter/settings_map.py _build_domain: bounds plus the solver's world translation; rotation and scale are not used.
+    const offset = positionOf(object);
+    const lo = vec3(solver, 'min_bound', [-1, -1, -1]).map((v, i) => v + offset[i]);
+    const hi = vec3(solver, 'max_bound', [1, 1, 1]).map((v, i) => v + offset[i]);
+    return JSON.stringify([lo, hi]);
   }
   return '';
 }
@@ -63,12 +92,20 @@ export function useDomain(scene: SceneService): Domain {
     if (!key) return DEFAULT_DOMAIN;
     const [min, max] = JSON.parse(key) as [Vec3, Vec3];
     const extent = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2], 1e-12);
-    return { min, max, extent };
+    return { min, max, extent, real: true };
   }, [key]);
+}
+
+/** True when `p` (scene coordinates) lies in the domain, with a small tolerance for points on a face. */
+export function insideDomain(domain: Domain, p: Vec3): boolean {
+  if (!domain.real) return true;
+  const tol = domain.extent * 1e-6;
+  return [0, 1, 2].every((a) => p[a] >= domain.min[a] - tol && p[a] <= domain.max[a] + tol);
 }
 
 const UNITS: Array<[number, string]> = [
   [1, 'm'],
+  [1e-2, 'cm'],
   [1e-3, 'mm'],
   [1e-6, 'µm'],
   [1e-9, 'nm'],
@@ -81,19 +118,19 @@ export function formatLength(metres: number): string {
   return `${Number((metres / scale).toPrecision(3))} ${name}`;
 }
 
-/**
- * Converts world points into the object's local frame. Annotations are drawn
- * inside the object's transform group, but some (an infinite plane monitor,
- * a TFSF box) are defined in world coordinates.
- */
-export function worldToLocal(object: HostSceneObject): ThreeTypes.Matrix4 {
-  const t = (object as { transform?: { position?: number[]; rotation?: number[]; scale?: number[] } }).transform ?? {};
-  const position = new THREE.Vector3(...((t.position as Vec3) ?? [0, 0, 0]));
-  const r = t.rotation ?? [0, 0, 0];
-  const quaternion =
-    r.length === 4 ? new THREE.Quaternion(r[0], r[1], r[2], r[3]) : new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0], r[1], r[2]));
-  const scale = new THREE.Vector3(...((t.scale as Vec3) ?? [1, 1, 1]));
-  return new THREE.Matrix4().compose(position, quaternion, scale).invert();
+const FREQUENCY_UNITS: Array<[number, string]> = [
+  [1e12, 'THz'],
+  [1e9, 'GHz'],
+  [1e6, 'MHz'],
+  [1e3, 'kHz'],
+  [1, 'Hz'],
+];
+
+/** "2.4 GHz": three significant digits in the largest unit that keeps the value at least 1. */
+export function formatFrequency(hz: number): string {
+  const a = Math.abs(hz);
+  const [scale, name] = FREQUENCY_UNITS.find(([s]) => a >= s) ?? FREQUENCY_UNITS[FREQUENCY_UNITS.length - 1];
+  return `${Number((hz / scale).toPrecision(3))} ${name}`;
 }
 
 /** Corners, in loop order, of an axis-aligned rectangle with one zero side centred on `center`. */
@@ -124,4 +161,21 @@ export function boxEdges(min: Vec3, max: Vec3): Vec3[] {
     for (const bit of [1, 2, 4]) if (!(i & bit)) out.push(c(i), c(i | bit));
   }
   return out;
+}
+
+export const AXIS_INDEX: Record<string, number> = { x: 0, y: 1, z: 2, Ex: 0, Ey: 1, Ez: 2 };
+export const AXIS_NAMES = ['x', 'y', 'z'] as const;
+
+export function axisVector(axis: number, sign = 1): Vec3 {
+  const v: Vec3 = [0, 0, 0];
+  v[axis] = sign;
+  return v;
+}
+
+export function add(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+export function sub(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
