@@ -51,7 +51,7 @@ icon = "zap"
 version = "1.0.0"
 dir = "templates/em-design"
 manifest = "template.manifest.json"
-sha256 = "77abf575bd670ee4b527c330c719482af8feeab58b859ea2af40691fd882daf4"
+sha256 = "0cd12703c78879da35b384a5e2d15d6525c40c59477cba11c5147ece6ed47c9a"
 
 # Generators: antennas and arrays
 # Model files (models/antennas/<name>.py) that build parametric antenna geometry;
