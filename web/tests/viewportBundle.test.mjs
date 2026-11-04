@@ -16,6 +16,15 @@ test('manifest declares the viewport host bundle', () => {
   assert.match(manifest, /\[contributes\.viewport\.host\]\s*\nentry = "viewport\.js"/);
   assert.match(manifest, /root = "web"/);
   assert.match(manifest, /frontend = true/);
+  assert.match(manifest, /entry = "viewport\.js"\s*\nsdkVersion = "2\.0\.0"/);
+});
+
+test('bundle is an SDK 2 plugin definition', () => {
+  const bundle = fs.readFileSync(path.join(webRoot, 'viewport.js'), 'utf8');
+  assert.match(bundle, /sdkVersion = "2\.0\.0"/);
+  assert.match(bundle, /id: "witwin\.maxwell"/);
+  assert.match(bundle, /as default/);
+  assert.doesNotMatch(bundle, /sceneWrites|export function activate/);
 });
 
 test('bundle is self-contained and registers every Maxwell visual', () => {

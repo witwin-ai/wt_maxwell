@@ -1,6 +1,6 @@
 import { Html, React, THREE, useEffect, useFrame, useMemo, useRef } from './runtime';
 import type * as ThreeTypes from 'three';
-import type { HostSceneObject, ViewportHost } from './sdk/types';
+import type { HostSceneObject, SceneService } from '@witwin/host';
 import { Arrow, PlaneDimensions, PlaneRect } from './primitives';
 import { normalAxis, value, vec3, type Domain, type Vec3 } from './emStyle';
 import { modeLabel, paintModeProfile, readModeProfiles, type ModeProfile } from './modeProfile';
@@ -131,7 +131,7 @@ function ModeList({
 }
 
 export function ModePlane({
-  host,
+  scene,
   object,
   component,
   selected,
@@ -139,7 +139,7 @@ export function ModePlane({
   color,
   dashed,
 }: {
-  host: ViewportHost;
+  scene: SceneService;
   object: HostSceneObject;
   component: any;
   selected: boolean;
@@ -160,7 +160,7 @@ export function ModePlane({
   const planeSide = Math.max(size[ua], size[va]);
 
   const selectMode = (index: number) => {
-    void host.sceneWrites.updateComponentField(object.id, component.name, 'mode_index', index);
+    void scene.updateComponentField(object.id, component.name, 'mode_index', index);
   };
 
   // The list sits beside whichever plane edge is right-most on screen, at

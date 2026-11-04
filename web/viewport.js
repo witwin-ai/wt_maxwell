@@ -41,15 +41,19 @@ function vec3(component, name, fallback) {
   return Array.isArray(v) && v.length >= 3 ? [Number(v[0]), Number(v[1]), Number(v[2])] : fallback;
 }
 var DEFAULT_DOMAIN = { min: [-1, -1, -1], max: [1, 1, 1], extent: 2 };
-function domainKey(host) {
-  for (const object of Object.values(host.scene.getObjects())) {
+function domainKey(scene) {
+  for (const object of Object.values(scene.getObjects())) {
     const solver = findComponent(object, "MaxwellSolver");
     if (solver) return JSON.stringify([vec3(solver, "min_bound", [-1, -1, -1]), vec3(solver, "max_bound", [1, 1, 1])]);
   }
   return "";
 }
-function useDomain(host) {
-  const key = React.useSyncExternalStore(host.scene.subscribe, () => domainKey(host));
+function useDomain(scene) {
+  const subscribe = React.useCallback((onChange) => {
+    const subscription = scene.subscribe(onChange);
+    return () => subscription.dispose();
+  }, [scene]);
+  const key = React.useSyncExternalStore(subscribe, () => domainKey(scene));
   return React.useMemo(() => {
     if (!key) return DEFAULT_DOMAIN;
     const [min, max] = JSON.parse(key);
@@ -356,7 +360,7 @@ function ModeList({
   );
 }
 function ModePlane({
-  host,
+  scene,
   object,
   component,
   selected,
@@ -376,7 +380,7 @@ function ModePlane({
   const origin = [0, 0, 0];
   const planeSide = Math.max(size[ua], size[va]);
   const selectMode = (index) => {
-    void host.sceneWrites.updateComponentField(object.id, component.name, "mode_index", index);
+    void scene.updateComponentField(object.id, component.name, "mode_index", index);
   };
   const listAnchorRef = useRef(null);
   const edgeMidpoints = useMemo(
@@ -521,12 +525,13 @@ var SOURCE_AND_MONITOR_VISUALS = [
   { component: "ModeMonitor", render: (a) => /* @__PURE__ */ React.createElement(ModePlane, { ...a, color: MONITOR_COLOR, dashed: true }) }
 ];
 function registerMaxwellVisuals(host) {
+  const scene = host.services.get("scene");
   for (const visual of SOURCE_AND_MONITOR_VISUALS) {
     let MaxwellVisual = function({ object, selected }) {
-      const domain = useDomain(host);
+      const domain = useDomain(scene);
       const component = findComponent(object, visual.component);
       if (!component || object.visible === false) return null;
-      return /* @__PURE__ */ React.createElement(React.Fragment, null, visual.render({ host, object, component, domain, selected }));
+      return /* @__PURE__ */ React.createElement(React.Fragment, null, visual.render({ scene, object, component, domain, selected }));
     };
     host.registerVisualizer({
       id: `witwin.maxwell.${visual.component}`,
@@ -537,7 +542,7 @@ function registerMaxwellVisuals(host) {
     });
   }
   function MaxwellPml({ object }) {
-    const domain = useDomain(host);
+    const domain = useDomain(scene);
     const component = findComponent(object, "MaxwellSolver");
     return component && object.visible !== false ? /* @__PURE__ */ React.createElement(PmlBox, { object, component, domain }) : null;
   }
@@ -550,11 +555,16 @@ function registerMaxwellVisuals(host) {
 }
 
 // src/viewport.ts
-var sdkVersion = "1.0.0";
-function activate(host) {
-  registerMaxwellVisuals(host);
-}
+var sdkVersion = "2.0.0";
+var plugin = {
+  id: "witwin.maxwell",
+  inject: ["scene"],
+  activate(host) {
+    registerMaxwellVisuals(host);
+  }
+};
+var viewport_default = plugin;
 export {
-  activate,
+  viewport_default as default,
   sdkVersion
 };

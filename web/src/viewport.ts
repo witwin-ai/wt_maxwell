@@ -1,8 +1,14 @@
-import type { ViewportHost } from './sdk/types';
+import type { PluginDefinition } from '@witwin/host';
 import { registerMaxwellVisuals } from './visuals';
 
-export const sdkVersion = '1.0.0';
+export const sdkVersion = '2.0.0';
 
-export function activate(host: ViewportHost): void {
-  registerMaxwellVisuals(host);
-}
+const plugin: PluginDefinition = {
+  id: 'witwin.maxwell',
+  inject: ['scene'],
+  activate(host) {
+    registerMaxwellVisuals(host);
+  },
+};
+
+export default plugin;

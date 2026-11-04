@@ -1,6 +1,6 @@
 import type * as ThreeTypes from 'three';
 import { React, THREE } from './runtime';
-import type { HostSceneObject, ViewportHost } from './sdk/types';
+import type { HostSceneObject, SceneService } from '@witwin/host';
 
 /*
  * Shared look of the Maxwell scene annotations: colours, sizes relative to
@@ -41,8 +41,8 @@ export interface Domain {
 
 const DEFAULT_DOMAIN: Domain = { min: [-1, -1, -1], max: [1, 1, 1], extent: 2 };
 
-function domainKey(host: ViewportHost): string {
-  for (const object of Object.values(host.scene.getObjects())) {
+function domainKey(scene: SceneService): string {
+  for (const object of Object.values(scene.getObjects())) {
     const solver = findComponent(object, 'MaxwellSolver');
     if (solver) return JSON.stringify([vec3(solver, 'min_bound', [-1, -1, -1]), vec3(solver, 'max_bound', [1, 1, 1])]);
   }
@@ -53,8 +53,12 @@ function domainKey(host: ViewportHost): string {
  * The Maxwell domain of the scene, or a 2 m cube without a solver. A string
  * snapshot keeps useSyncExternalStore from re-rendering on unrelated edits.
  */
-export function useDomain(host: ViewportHost): Domain {
-  const key = React.useSyncExternalStore(host.scene.subscribe, () => domainKey(host));
+export function useDomain(scene: SceneService): Domain {
+  const subscribe = React.useCallback((onChange: () => void) => {
+    const subscription = scene.subscribe(onChange);
+    return () => subscription.dispose();
+  }, [scene]);
+  const key = React.useSyncExternalStore(subscribe, () => domainKey(scene));
   return React.useMemo(() => {
     if (!key) return DEFAULT_DOMAIN;
     const [min, max] = JSON.parse(key) as [Vec3, Vec3];

@@ -9,7 +9,11 @@ dependencies = ["witwin[maxwell]", "scipy", "numpy"]
 icon = "waves"
 enabled = true
 # test_m4_solve shows a field with the Volume Plugin's VolumeRenderer when it is installed.
-pluginDependencies = [{ id = "witwin.volume", optional = true }]
+pluginDependencies = [
+  { id = "witwin.volume", optional = true },
+  # The web half only adds visualizers and a gizmo to the viewport.
+  { id = "studio.viewport", optional = true },
+]
 
 [engines]
 witwin = "^1.0.0"
@@ -20,7 +24,7 @@ root = "web"
 # Sources, monitors, mode planes and the PML boundary in the viewport.
 [contributes.viewport.host]
 entry = "viewport.js"
-sdkVersion = "1.0.0"
+sdkVersion = "2.0.0"
 
 [permissions]
 frontend = true

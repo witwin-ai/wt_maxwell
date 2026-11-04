@@ -1,6 +1,6 @@
 import type ReactTypes from 'react';
 import { Line, React, THREE, useMemo } from './runtime';
-import type { HostSceneObject, ViewportHost } from './sdk/types';
+import type { FrontendHost, HostSceneObject, SceneService } from '@witwin/host';
 import { Arrow, PlaneRect } from './primitives';
 import { ModePlane } from './ModePlane';
 import {
@@ -164,7 +164,7 @@ function PmlBox({ object, component, domain }: { object: HostSceneObject; compon
 
 type Visual = {
   component: string;
-  render: (args: { host: ViewportHost; object: HostSceneObject; component: any; domain: Domain; selected: boolean }) => ReactTypes.ReactNode;
+  render: (args: { scene: SceneService; object: HostSceneObject; component: any; domain: Domain; selected: boolean }) => ReactTypes.ReactNode;
 };
 
 const SOURCE_AND_MONITOR_VISUALS: Visual[] = [
@@ -179,13 +179,14 @@ const SOURCE_AND_MONITOR_VISUALS: Visual[] = [
   { component: 'ModeMonitor', render: (a) => <ModePlane {...a} color={MONITOR_COLOR} dashed /> },
 ];
 
-export function registerMaxwellVisuals(host: ViewportHost): void {
+export function registerMaxwellVisuals(host: FrontendHost): void {
+  const scene = host.services.get('scene');
   for (const visual of SOURCE_AND_MONITOR_VISUALS) {
     function MaxwellVisual({ object, selected }: VisualProps) {
-      const domain = useDomain(host);
+      const domain = useDomain(scene);
       const component = findComponent(object, visual.component);
       if (!component || object.visible === false) return null;
-      return <>{visual.render({ host, object, component, domain, selected })}</>;
+      return <>{visual.render({ scene, object, component, domain, selected })}</>;
     }
     host.registerVisualizer({
       id: `witwin.maxwell.${visual.component}`,
@@ -199,7 +200,7 @@ export function registerMaxwellVisuals(host: ViewportHost): void {
   // A gizmo, not a visualizer: wt_volume's Field visualizer still draws the
   // solver's domain box and field; this only adds the PML boundary.
   function MaxwellPml({ object }: VisualProps) {
-    const domain = useDomain(host);
+    const domain = useDomain(scene);
     const component = findComponent(object, 'MaxwellSolver');
     return component && object.visible !== false ? <PmlBox object={object} component={component} domain={domain} /> : null;
   }
