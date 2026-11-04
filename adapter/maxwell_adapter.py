@@ -14,9 +14,15 @@ from typing import Any, List, Optional
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from witwin_server import Scene, SceneObject
-from witwin_server.features.platform.bridge import GeometryMap, MaterialMap, StructureMap, TransformMap
-from witwin_server.utils.mitsuba_utils import get_world_transform
+from witwin_server.api import (
+    Scene,
+    SceneObject,
+    GeometryMap,
+    MaterialMap,
+    StructureMap,
+    TransformMap,
+    get_world_transform,
+)
 
 from .common import render_mesh_arrays
 from .material_adapter import MaterialAdapter

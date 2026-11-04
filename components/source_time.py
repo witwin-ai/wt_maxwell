@@ -7,7 +7,7 @@ lives once in ``adapter/source_map.py`` (:class:`SourceTimeMap`). Each builder
 takes the name of the boolean ``gate`` field that enables the profile so a source
 can gate on ``st_enabled`` while a port gates on ``is_source``.
 """
-from witwin_server.core.components import bool_field, float_field, string_field
+from witwin_server.api import bool_field, float_field, string_field
 
 GROUP = "Source Time"
 TIME_KINDS = ["cw", "gaussian_pulse", "ricker"]

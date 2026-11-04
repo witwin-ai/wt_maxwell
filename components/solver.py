@@ -12,9 +12,10 @@ import asyncio
 import numpy as np
 from dataclasses import asdict
 
-from witwin_server import Notifications, SceneObject
-from witwin_server.api import api
-from witwin_server.core.components import (
+from witwin_server.api import (
+    Notifications,
+    SceneObject,
+    api,
     bool_field,
     button,
     component,
@@ -27,8 +28,8 @@ from witwin_server.core.components import (
     string_field,
     tab_group,
     vector3_field,
+    FieldComponent,
 )
-from witwin_server.core.components.field_region import FieldComponent
 
 from ..adapter.common import num
 from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, pml_inset, resolution_from_bounds

@@ -2,7 +2,7 @@
 import math
 
 import pytest
-from witwin_server import SceneObject
+from witwin_server.api import SceneObject
 
 C = 299792458.0
 

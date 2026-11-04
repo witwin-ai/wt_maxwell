@@ -11,7 +11,7 @@ in one place, the field *builders* live as module-level ``_st_*`` functions and
 each source lists which it uses; the conversion logic lives once in
 ``adapter/source_map.py``.
 """
-from witwin_server.core.components import (
+from witwin_server.api import (
     Component,
     component,
     float_field,

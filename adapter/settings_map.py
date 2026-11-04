@@ -9,8 +9,7 @@ import ast
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
-from witwin_server import SceneObject
-from witwin_server.utils.mitsuba_utils import get_world_transform
+from witwin_server.api import SceneObject, get_world_transform
 
 from .grid import SPEED_OF_LIGHT, grid_cell_size, grid_frequency, quantize_ppw
 

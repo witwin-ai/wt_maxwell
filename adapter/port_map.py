@@ -7,7 +7,7 @@ shared :class:`SourceTimeMap` (gated on ``is_source``).
 """
 from typing import Any
 
-from witwin_server import SceneObject
+from witwin_server.api import SceneObject
 
 from .common import axis_field, freqs_to_platform, freqs_to_studio, num, vec
 from .source_map import SourceTimeMap

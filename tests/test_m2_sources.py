@@ -5,7 +5,7 @@ bounds are preserved; ModeSource ``size`` (one-zero) and polarization round-trip
 """
 import pytest
 import witwin.maxwell as mw
-from witwin_server import SceneObject
+from witwin_server.api import SceneObject
 
 from _helpers import assert_source_equal, assert_sources_equal, assert_source_time_equal
 

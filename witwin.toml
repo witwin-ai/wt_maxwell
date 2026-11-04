@@ -8,6 +8,8 @@ repository = "https://github.com/witwin-ai/wt_maxwell"
 dependencies = ["witwin[maxwell]", "scipy", "numpy"]
 icon = "waves"
 enabled = true
+# test_m4_solve shows a field with the Volume Plugin's VolumeRenderer when it is installed.
+pluginDependencies = [{ id = "witwin.volume", optional = true }]
 
 [engines]
 witwin = "^1.0.0"

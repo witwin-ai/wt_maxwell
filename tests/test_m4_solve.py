@@ -100,9 +100,9 @@ def test_slice_log_scale(adapter, solve_mod, device, solver_ready):
 
 
 def test_show_3d_volume_registers_object():
-    import wt_volume.components.volume  # noqa: F401
-    from witwin_server import Scene
-    from witwin_server.features.platform.bridge import FieldViz
+    # wt_volume.api registers the VolumeRenderer Component show_3d builds on.
+    pytest.importorskip("wt_volume.api", reason="the Volume Plugin (witwin.volume) is not installed")
+    from witwin_server.api import Scene, FieldViz
 
     target = Scene()
     obj = FieldViz.show_3d(np.ones((4, 4, 4), dtype=np.float32), scene=target,

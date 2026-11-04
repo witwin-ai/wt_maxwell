@@ -8,10 +8,16 @@ import math
 
 import numpy as np
 import witwin.maxwell as mw
-from witwin_server.core.components import MaterialComponent, PlatformGeometryComponent, SkinnedMeshComponent
-from witwin_server.features.timeline import InterpolationType, TimelineManager
-from witwin_server.features.solvers.scene_ref import load_scene_ref, make_scene_ref
-from witwin_server import SceneObject
+from witwin_server.api import (
+    MaterialComponent,
+    PlatformGeometryComponent,
+    SkinnedMeshComponent,
+    InterpolationType,
+    TimelineManager,
+    load_scene_ref,
+    make_scene_ref,
+    SceneObject,
+)
 
 from _helpers import approx, assert_config_equal
 

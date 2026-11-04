@@ -10,6 +10,7 @@ pip-installed; the server adds the same directory at startup). If the base/solve
 deps are not importable, the round-trip modules are skipped rather than erroring.
 """
 import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -23,7 +24,8 @@ if str(PLUGINS_DIR) not in sys.path:
 PKG = "wt_maxwell"
 
 try:
-    import witwin_server  # noqa: F401
+    if importlib.util.find_spec("witwin_server") is None:
+        raise ImportError("witwin_server")
     import witwin.maxwell  # noqa: F401
     _DEPS_OK = True
 except ImportError:

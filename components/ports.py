@@ -6,7 +6,7 @@ at solve time via ``Scene.resolved_sources()`` / ``resolved_monitors()``. When
 ``is_source`` is set, the port carries a temporal profile (the shared ``st_*``
 fields, gated on ``is_source``).
 """
-from witwin_server.core.components import (
+from witwin_server.api import (
     Component,
     bool_field,
     component,

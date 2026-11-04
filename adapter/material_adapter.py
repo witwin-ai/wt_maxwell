@@ -14,7 +14,18 @@ on the ``Material`` component schema in core).
 density tensor is the optimization design variable (runtime state), so it is never
 serialized — ``to_platform`` rebuilds a zero placeholder of the stored shape.
 """
+import importlib.util
 from typing import Any, List
+
+
+def _drjit_available() -> bool:
+    """Whether drjit is installed; the region's preview mesh is built only then.
+
+    Plugin-local on purpose: Studio's own flag sits in an internal module that
+    Plugins may not import (D16). The check does not import drjit itself.
+    """
+    return importlib.util.find_spec("drjit") is not None
+
 
 _TOL = 1e-6
 
@@ -167,10 +178,7 @@ class MaterialAdapter:
     @staticmethod
     def region_to_studio(region: Any) -> Any:
         """Build a region ``SceneObject`` (Box geometry + MaterialRegion component)."""
-        from witwin_server import SceneObject
-        from witwin_server.features.platform.bridge import GeometryMap
-        from witwin_server.core.components import PlatformGeometryComponent
-        from witwin_server.core.components.mesh import DRJIT_AVAILABLE
+        from witwin_server.api import SceneObject, GeometryMap, PlatformGeometryComponent
         import numpy as np
 
         from ..components.materials import MaterialRegionComponent
@@ -178,7 +186,7 @@ class MaterialAdapter:
         sg = GeometryMap.to_studio(region.geometry)
         obj = SceneObject(name=region.name or "MaterialRegion", mesh_type="Custom")
         GeometryMap.fill_component(obj.add_component(PlatformGeometryComponent()), sg)
-        if sg.vertices is not None and sg.faces is not None and DRJIT_AVAILABLE:
+        if sg.vertices is not None and sg.faces is not None and _drjit_available():
             obj.get_component("Mesh").set_mesh_data(sg.vertices, sg.faces.astype(np.uint32), notify=False)
         transform = obj.get_component("Transform")
         transform.position = sg.position
@@ -205,7 +213,7 @@ class MaterialAdapter:
         """Rebuild a ``maxwell.MaterialRegion`` from a region object (zero density)."""
         import torch
         import witwin.maxwell as mw
-        from witwin_server.features.platform.bridge import GeometryMap, TransformMap
+        from witwin_server.api import GeometryMap, TransformMap
 
         comp = obj.get_component("MaterialRegion")
         geom = obj.get_component("PlatformGeometry")

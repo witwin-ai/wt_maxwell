@@ -7,8 +7,7 @@ and shared by every source (and by ``ModePort`` in M3).
 """
 from typing import Any, Optional
 
-from witwin_server import SceneObject
-from witwin_server.utils.mitsuba_utils import get_world_transform
+from witwin_server.api import SceneObject, get_world_transform
 
 from .common import axis_field as _axis_from_letter
 from .common import axis_name as _axis_name

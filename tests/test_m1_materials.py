@@ -95,7 +95,7 @@ def test_kerr_round_trip(adapter):
 # --- guards (forbidden combinations) -----------------------------------------
 
 def _em(model="scalar", **fields):
-    from witwin_server.core.components import MaterialComponent
+    from witwin_server.api import MaterialComponent
     em = MaterialComponent()
     em.model = model
     for key, value in fields.items():

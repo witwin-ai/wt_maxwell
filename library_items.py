@@ -15,7 +15,7 @@ materials, and components match the round-trip exactly). The factory adds any ex
 objects to the drop scene and returns the primary one (the library handler adds
 that one). Result/runtime state is never part of a prefab.
 """
-from witwin_server import Library
+from witwin_server.api import Library
 
 _CATEGORY = "maxwell"
 _DEFAULT_FREQ = 1e9  # lambda ~0.3 m -> ~7.5 cells/wavelength on the 0.04 m demo grid
