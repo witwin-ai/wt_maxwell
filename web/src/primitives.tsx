@@ -225,11 +225,19 @@ export function Ring({ center, normal, radius, color, dashed = false, dash }: { 
  * with a dot in the annotation's role colour so a label reads as belonging
  * to its marker.
  */
-export function Label({ position, color, children }: { position: Vec3; color?: string; children: React.ReactNode }) {
+/**
+ * A tag that floats just above its anchor point on screen, so it never
+ * covers the object it names. `row` stacks tags that share an anchor:
+ * row 0 is nearest the point, each next row one tag height higher.
+ * `centered` puts the tag on the point instead (a dimension's length sits
+ * on its line).
+ */
+export function Label({ position, color, row = 0, centered = false, children }: { position: Vec3; color?: string; row?: number; centered?: boolean; children: React.ReactNode }) {
   return (
-    <Html position={position} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+    <Html position={position} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
       <div
         style={{
+          transform: centered ? 'translate(-50%, -50%)' : `translate(-50%, calc(-100% - ${8 + row * 22}px))`,
           display: 'flex',
           alignItems: 'center',
           gap: 5,
@@ -257,7 +265,8 @@ export function Label({ position, color, children }: { position: Vec3; color?: s
 export function PlaneDimensions({ center, size, color }: { center: Vec3; size: Vec3; color: string }) {
   const normal = normalAxis(size);
   const [ua, va] = [0, 1, 2].filter((d) => d !== normal);
-  const offset = Math.max(size[ua], size[va]) * 0.08;
+  // Far enough out that the length tag clears the edge handles at the edge midpoints.
+  const offset = Math.max(size[ua], size[va]) * 0.2;
   const tick = offset * 0.35;
   const dims = [
     [ua, va],
@@ -285,7 +294,7 @@ export function PlaneDimensions({ center, size, color }: { center: Vec3; size: V
       {dims.map((d, i) => (
         <group key={i}>
           <Line points={d.segments} segments color={color} lineWidth={1} raycast={noRaycast} />
-          <Label position={d.mid}>{d.text}</Label>
+          <Label position={d.mid} centered>{d.text}</Label>
         </group>
       ))}
     </group>

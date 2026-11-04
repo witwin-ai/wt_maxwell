@@ -109,9 +109,9 @@ function polarizationOf(component: any): Vec3 {
 }
 
 function PointDipole({ component, domain, selected, palette, origin }: Ctx) {
-  const r = domain.extent * 0.012;
+  const r = domain.extent * 0.015;
   const p = new THREE.Vector3(...polarizationOf(component)).normalize();
-  const length = domain.extent * 0.1;
+  const length = domain.extent * 0.14;
   const color = insideDomain(domain, origin) ? palette.emitter : palette.warning;
   const mode = String(value(component, 'polarization_mode', 'Ez'));
   return (
@@ -123,7 +123,7 @@ function PointDipole({ component, domain, selected, palette, origin }: Ctx) {
       <Arrow origin={p.clone().multiplyScalar(-length / 2).toArray() as Vec3} direction={p.toArray() as Vec3} length={length} color={color} />
       <HitSphere radius={r * 3} />
       {selected && (
-        <Label position={[0, r * 4, 0]} color={color}>
+        <Label position={[0, length / 2, 0]} color={color}>
           {joinLabel(`Dipole ${mode === 'vector' ? 'p' : mode}`, sourceTimeLabel(component), color === palette.warning && 'Outside domain')}
         </Label>
       )}
@@ -239,8 +239,9 @@ function PlaneMonitorScene({ component, domain, selected, palette }: Ctx) {
   size[axis] = 0;
   const color = insideDomain(domain, center) ? palette.sensor : palette.warning;
   const flux = !!value(component, 'compute_flux', false);
+  // Tags float upward on screen, so hang this one from the plane's top edge (y is up on the Bench).
   const labelAt: Vec3 = [...center];
-  labelAt[(axis + 1) % 3] = domain.max[(axis + 1) % 3];
+  if (axis !== 1) labelAt[1] = domain.max[1];
   return (
     <group>
       <PlaneRect center={center} size={size} color={color} dashed dash={domain.extent * 0.012} fillOpacity={flux ? 0.12 : 0.05} />
@@ -260,8 +261,7 @@ function FinitePlaneMonitor({ component, domain, selected, palette, origin }: Ct
   const normal = normalAxis(size);
   const color = insideDomain(domain, origin) ? palette.sensor : palette.warning;
   const flux = !!value(component, 'compute_flux', false);
-  const labelAt: Vec3 = [0, 0, 0];
-  labelAt[(normal + 1) % 3] = size[(normal + 1) % 3] / 2 + domain.extent * 0.03;
+  const labelAt: Vec3 = [0, size[1] / 2, 0];
   return (
     <group>
       <PlaneRect center={[0, 0, 0]} size={size} color={color} dashed dash={domain.extent * 0.012} fillOpacity={flux ? 0.12 : 0.05} />
@@ -301,8 +301,7 @@ function ModePlaneVisual(props: Ctx & { color: string; dashed: boolean; title: s
   const size = vec3(component, 'size', [1, 1, 0]);
   const normal = normalAxis(size);
   const color = insideDomain(domain, origin) ? base : palette.warning;
-  const labelAt: Vec3 = [0, 0, 0];
-  labelAt[(normal + 1) % 3] = -size[(normal + 1) % 3] / 2 - domain.extent * 0.05;
+  const labelAt: Vec3 = [0, size[1] / 2, 0];
   return (
     <group>
       <ModePlane scene={props.scene} object={props.object} component={component} selected={selected} domain={domain} color={color} dashed={dashed} />

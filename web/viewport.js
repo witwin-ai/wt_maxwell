@@ -288,11 +288,12 @@ function Ring({ center, normal, radius, color, dashed = false, dash }) {
   }, [...center, ...normal, radius]);
   return /* @__PURE__ */ React.createElement(Line, { points, color, lineWidth: 1.5, dashed, dashSize: dash, gapSize: dash ? dash * 0.6 : void 0, raycast: noRaycast });
 }
-function Label({ position, color, children }) {
-  return /* @__PURE__ */ React.createElement(Html, { position, center: true, zIndexRange: [20, 0], style: { pointerEvents: "none" } }, /* @__PURE__ */ React.createElement(
+function Label({ position, color, row = 0, centered = false, children }) {
+  return /* @__PURE__ */ React.createElement(Html, { position, zIndexRange: [20, 0], style: { pointerEvents: "none" } }, /* @__PURE__ */ React.createElement(
     "div",
     {
       style: {
+        transform: centered ? "translate(-50%, -50%)" : `translate(-50%, calc(-100% - ${8 + row * 22}px))`,
         display: "flex",
         alignItems: "center",
         gap: 5,
@@ -312,7 +313,7 @@ function Label({ position, color, children }) {
 function PlaneDimensions({ center, size, color }) {
   const normal = normalAxis(size);
   const [ua, va] = [0, 1, 2].filter((d) => d !== normal);
-  const offset = Math.max(size[ua], size[va]) * 0.08;
+  const offset = Math.max(size[ua], size[va]) * 0.2;
   const tick = offset * 0.35;
   const dims = [
     [ua, va],
@@ -335,7 +336,7 @@ function PlaneDimensions({ center, size, color }) {
     mid[across] -= tick * 2.2;
     return { segments, mid, text: formatLength(size[along]) };
   });
-  return /* @__PURE__ */ React.createElement("group", null, dims.map((d, i) => /* @__PURE__ */ React.createElement("group", { key: i }, /* @__PURE__ */ React.createElement(Line, { points: d.segments, segments: true, color, lineWidth: 1, raycast: noRaycast }), /* @__PURE__ */ React.createElement(Label, { position: d.mid }, d.text))));
+  return /* @__PURE__ */ React.createElement("group", null, dims.map((d, i) => /* @__PURE__ */ React.createElement("group", { key: i }, /* @__PURE__ */ React.createElement(Line, { points: d.segments, segments: true, color, lineWidth: 1, raycast: noRaycast }), /* @__PURE__ */ React.createElement(Label, { position: d.mid, centered: true }, d.text))));
 }
 
 // src/modeProfile.ts
@@ -643,7 +644,7 @@ function FaceBoundary({ face, kind, inset, palette, dash, bench }) {
     max[face.axis] = Math.max(face.plane, inner);
     const innerCenter = [...face.center];
     innerCenter[face.axis] = inner;
-    return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(BoxFill, { min, max, color, opacity: bench ? 0.07 : 0.1 }), /* @__PURE__ */ React.createElement(PlaneRect, { center: innerCenter, size: face.size, color, dashed: true, dash, lineWidth: 1 }));
+    return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(BoxFill, { min, max, color, opacity: bench ? 0.035 : 0.06 }), /* @__PURE__ */ React.createElement(PlaneRect, { center: innerCenter, size: face.size, color, dashed: true, dash, lineWidth: 1 }));
   }
   if (kind === "periodic" || kind === "bloch") {
     return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(PlaneRect, { center: face.center, size: face.size, color, dashed: true, dash: dash * 0.6, lineWidth: 1.25 }), /* @__PURE__ */ React.createElement(Line, { points: chevron(face, Math.min(face.size[(face.axis + 1) % 3], face.size[(face.axis + 2) % 3]) * 0.08), segments: true, color, lineWidth: 1.5, raycast: noRaycast }));
@@ -668,7 +669,7 @@ function SymmetryPlane({ face, mode, palette }) {
   const segments = useMemo(() => hatch(face, 8), [face]);
   return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(PlaneRect, { center: face.center, size: face.size, color: palette.boundary, lineWidth: 2, fillOpacity: mode === "PEC" ? 0.18 : 0.1 }), /* @__PURE__ */ React.createElement(Line, { points: segments, segments: true, color: palette.boundary, lineWidth: 1, transparent: true, opacity: 0.7, raycast: noRaycast }));
 }
-function GridTicks({ domain, solver, palette }) {
+function GridTicks({ domain, solver, palette, labelAt }) {
   const resolution = vec3(solver, "resolution", [1, 1, 1]).map((n) => Math.max(1, Math.round(n)));
   const cell = cellSize(solver);
   const segments = useMemo(() => {
@@ -689,8 +690,6 @@ function GridTicks({ domain, solver, palette }) {
     }
     return out;
   }, [domain, ...resolution]);
-  const labelAt = [...domain.min];
-  labelAt[1] -= domain.extent * 0.05;
   return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(Line, { points: segments, segments: true, color: palette.text, lineWidth: 1, transparent: true, opacity: 0.75, raycast: noRaycast }), /* @__PURE__ */ React.createElement(Label, { position: labelAt }, `Grid \u0394 ${formatLength(cell)} \xB7 ${resolution.join(" \xD7 ")}`));
 }
 function SolverAnnotations({ solver, domain, selected, stage, palette }) {
@@ -703,8 +702,8 @@ function SolverAnnotations({ solver, domain, selected, stage, palette }) {
   const layers = Math.round(Number(value(solver, "num_layers", 15)));
   const kindText = (k) => k === "pml" ? `PML \xB7 ${layers} layers` : KIND_LABEL[k] ?? k;
   const symmetry = [0, 1, 2].map((axis) => ({ axis, mode: String(value(solver, `symmetry_${AXIS_NAMES[axis]}`, "none")), side: String(value(solver, `symmetry_${AXIS_NAMES[axis]}_face`, "low")) })).filter((s) => s.mode !== "none");
-  const top = [(domain.min[0] + domain.max[0]) / 2, domain.max[1] + domain.extent * 0.06, (domain.min[2] + domain.max[2]) / 2];
-  return /* @__PURE__ */ React.createElement(SceneFrame, { anchor: "scene" }, faces.map((face, i) => /* @__PURE__ */ React.createElement(FaceBoundary, { key: FACES[i], face, kind: kinds[i], inset: inset[i], palette, dash, bench })), symmetry.map(({ axis, mode, side }) => /* @__PURE__ */ React.createElement(SymmetryPlane, { key: axis, face: faces[axis * 2 + (side === "high" ? 1 : 0)], mode, palette })), selected && uniform && /* @__PURE__ */ React.createElement(Label, { position: top, color: palette.boundary }, `Boundary \xB7 ${kindText(kinds[0])}`), selected && !uniform && faces.map((face, i) => {
+  const top = [(domain.min[0] + domain.max[0]) / 2, domain.max[1], (domain.min[2] + domain.max[2]) / 2];
+  return /* @__PURE__ */ React.createElement(SceneFrame, { anchor: "scene" }, faces.map((face, i) => /* @__PURE__ */ React.createElement(FaceBoundary, { key: FACES[i], face, kind: kinds[i], inset: inset[i], palette, dash, bench })), symmetry.map(({ axis, mode, side }) => /* @__PURE__ */ React.createElement(SymmetryPlane, { key: axis, face: faces[axis * 2 + (side === "high" ? 1 : 0)], mode, palette })), selected && uniform && /* @__PURE__ */ React.createElement(Label, { position: top, row: 1, color: palette.boundary }, `Boundary \xB7 ${kindText(kinds[0])}`), selected && !uniform && faces.map((face, i) => {
     const at = [...face.center];
     at[face.axis] += face.side * domain.extent * 0.05;
     return /* @__PURE__ */ React.createElement(Label, { key: FACES[i], position: at, color: palette.boundary }, `${AXIS_NAMES[face.axis]} ${face.side < 0 ? "low" : "high"} \xB7 ${kindText(kinds[i])}`);
@@ -713,7 +712,7 @@ function SolverAnnotations({ solver, domain, selected, stage, palette }) {
     const at = [...face.center];
     at[(axis + 1) % 3] += face.size[(axis + 1) % 3] * 0.3;
     return /* @__PURE__ */ React.createElement(Label, { key: `sym${axis}`, position: at, color: palette.boundary }, `${mode} symmetry \xB7 ${AXIS_NAMES[axis]} ${side}`);
-  }), selected && /* @__PURE__ */ React.createElement(GridTicks, { domain, solver, palette }));
+  }), selected && /* @__PURE__ */ React.createElement(GridTicks, { domain, solver, palette, labelAt: top }));
 }
 
 // src/handles.tsx
@@ -970,12 +969,12 @@ function polarizationOf(component) {
   return mode === "vector" ? vec3(component, "polarization", [0, 0, 1]) : axisVector(AXIS_INDEX[mode] ?? 2);
 }
 function PointDipole({ component, domain, selected, palette, origin }) {
-  const r = domain.extent * 0.012;
+  const r = domain.extent * 0.015;
   const p = new THREE.Vector3(...polarizationOf(component)).normalize();
-  const length = domain.extent * 0.1;
+  const length = domain.extent * 0.14;
   const color = insideDomain(domain, origin) ? palette.emitter : palette.warning;
   const mode = String(value(component, "polarization_mode", "Ez"));
-  return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement("mesh", { raycast: noRaycast }, /* @__PURE__ */ React.createElement("sphereGeometry", { args: [r, 16, 12] }), /* @__PURE__ */ React.createElement("meshBasicMaterial", { color, toneMapped: false })), /* @__PURE__ */ React.createElement(Arrow, { origin: p.clone().multiplyScalar(-length / 2).toArray(), direction: p.toArray(), length, color }), /* @__PURE__ */ React.createElement(HitSphere, { radius: r * 3 }), selected && /* @__PURE__ */ React.createElement(Label, { position: [0, r * 4, 0], color }, joinLabel(`Dipole ${mode === "vector" ? "p" : mode}`, sourceTimeLabel(component), color === palette.warning && "Outside domain")));
+  return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement("mesh", { raycast: noRaycast }, /* @__PURE__ */ React.createElement("sphereGeometry", { args: [r, 16, 12] }), /* @__PURE__ */ React.createElement("meshBasicMaterial", { color, toneMapped: false })), /* @__PURE__ */ React.createElement(Arrow, { origin: p.clone().multiplyScalar(-length / 2).toArray(), direction: p.toArray(), length, color }), /* @__PURE__ */ React.createElement(HitSphere, { radius: r * 3 }), selected && /* @__PURE__ */ React.createElement(Label, { position: [0, length / 2, 0], color }, joinLabel(`Dipole ${mode === "vector" ? "p" : mode}`, sourceTimeLabel(component), color === palette.warning && "Outside domain")));
 }
 function DirectedWave({ component, domain, selected, palette, origin, gaussian }) {
   const direction = vec3(component, "direction", [0, 0, 1]);
@@ -1037,7 +1036,7 @@ function PlaneMonitorScene({ component, domain, selected, palette }) {
   const color = insideDomain(domain, center) ? palette.sensor : palette.warning;
   const flux = !!value(component, "compute_flux", false);
   const labelAt = [...center];
-  labelAt[(axis + 1) % 3] = domain.max[(axis + 1) % 3];
+  if (axis !== 1) labelAt[1] = domain.max[1];
   return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(PlaneRect, { center, size, color, dashed: true, dash: domain.extent * 0.012, fillOpacity: flux ? 0.12 : 0.05 }), /* @__PURE__ */ React.createElement(FluxArrow, { center, normal: axis, component, domain, color }), /* @__PURE__ */ React.createElement(HitPlane, { center, size }), selected && /* @__PURE__ */ React.createElement(Label, { position: labelAt, color }, joinLabel(flux ? "Flux monitor" : "Plane monitor", fieldsText(component), `${AXIS_NAMES[axis]} = ${formatLength(position)}`, color === palette.warning && "Outside domain")));
 }
 function FinitePlaneMonitor({ component, domain, selected, palette, origin }) {
@@ -1045,8 +1044,7 @@ function FinitePlaneMonitor({ component, domain, selected, palette, origin }) {
   const normal = normalAxis(size);
   const color = insideDomain(domain, origin) ? palette.sensor : palette.warning;
   const flux = !!value(component, "compute_flux", false);
-  const labelAt = [0, 0, 0];
-  labelAt[(normal + 1) % 3] = size[(normal + 1) % 3] / 2 + domain.extent * 0.03;
+  const labelAt = [0, size[1] / 2, 0];
   return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(PlaneRect, { center: [0, 0, 0], size, color, dashed: true, dash: domain.extent * 0.012, fillOpacity: flux ? 0.12 : 0.05 }), /* @__PURE__ */ React.createElement(FluxArrow, { center: [0, 0, 0], normal, component, domain, color }), /* @__PURE__ */ React.createElement(HitPlane, { center: [0, 0, 0], size }), selected && /* @__PURE__ */ React.createElement(Label, { position: labelAt, color }, joinLabel(flux ? "Flux monitor" : "Plane monitor", fieldsText(component), color === palette.warning && "Outside domain")));
 }
 function ClosedSurfaceMonitor({ component, domain, selected, palette, origin }) {
@@ -1062,8 +1060,7 @@ function ModePlaneVisual(props) {
   const size = vec3(component, "size", [1, 1, 0]);
   const normal = normalAxis(size);
   const color = insideDomain(domain, origin) ? base : palette.warning;
-  const labelAt = [0, 0, 0];
-  labelAt[(normal + 1) % 3] = -size[(normal + 1) % 3] / 2 - domain.extent * 0.05;
+  const labelAt = [0, size[1] / 2, 0];
   return /* @__PURE__ */ React.createElement("group", null, /* @__PURE__ */ React.createElement(ModePlane, { scene: props.scene, object: props.object, component, selected, domain, color, dashed }), /* @__PURE__ */ React.createElement(HitPlane, { center: [0, 0, 0], size }), selected && /* @__PURE__ */ React.createElement(Label, { position: labelAt, color }, joinLabel(title, `mode ${Number(value(component, "mode_index", 0))}`, time, color === palette.warning && "Outside domain")));
 }
 function ModePort(props) {

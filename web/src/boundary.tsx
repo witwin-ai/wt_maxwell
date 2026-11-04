@@ -129,7 +129,7 @@ function FaceBoundary({ face, kind, inset, palette, dash, bench }: { face: Face;
     innerCenter[face.axis] = inner;
     return (
       <group>
-        <BoxFill min={min} max={max} color={color} opacity={bench ? 0.07 : 0.1} />
+        <BoxFill min={min} max={max} color={color} opacity={bench ? 0.035 : 0.06} />
         <PlaneRect center={innerCenter} size={face.size} color={color} dashed dash={dash} lineWidth={1} />
       </group>
     );
@@ -169,7 +169,7 @@ function SymmetryPlane({ face, mode, palette }: { face: Face; mode: string; pale
 }
 
 /** Ticks at the cell spacing along the three domain edges from the min corner, with the grid size. */
-function GridTicks({ domain, solver, palette }: { domain: Domain; solver: any; palette: ViewportStagePalette }) {
+function GridTicks({ domain, solver, palette, labelAt }: { domain: Domain; solver: any; palette: ViewportStagePalette; labelAt: Vec3 }) {
   const resolution = vec3(solver, 'resolution', [1, 1, 1]).map((n) => Math.max(1, Math.round(n))) as Vec3;
   const cell = cellSize(solver);
   const segments = useMemo(() => {
@@ -190,11 +190,10 @@ function GridTicks({ domain, solver, palette }: { domain: Domain; solver: any; p
     }
     return out;
   }, [domain, ...resolution]);
-  const labelAt: Vec3 = [...domain.min];
-  labelAt[1] -= domain.extent * 0.05;
   return (
     <group>
       <Line points={segments} segments color={palette.text} lineWidth={1} transparent opacity={0.75} raycast={noRaycast} />
+      {/* Under the boundary tag at the top of the domain: the min corner itself often projects onto the middle of the scene. */}
       <Label position={labelAt}>{`Grid Δ ${formatLength(cell)} · ${resolution.join(' × ')}`}</Label>
     </group>
   );
@@ -212,7 +211,7 @@ export function SolverAnnotations({ solver, domain, selected, stage, palette }: 
   const symmetry = [0, 1, 2]
     .map((axis) => ({ axis, mode: String(value(solver, `symmetry_${AXIS_NAMES[axis]}`, 'none')), side: String(value(solver, `symmetry_${AXIS_NAMES[axis]}_face`, 'low')) }))
     .filter((s) => s.mode !== 'none');
-  const top: Vec3 = [(domain.min[0] + domain.max[0]) / 2, domain.max[1] + domain.extent * 0.06, (domain.min[2] + domain.max[2]) / 2];
+  const top: Vec3 = [(domain.min[0] + domain.max[0]) / 2, domain.max[1], (domain.min[2] + domain.max[2]) / 2];
 
   return (
     <SceneFrame anchor="scene">
@@ -222,7 +221,7 @@ export function SolverAnnotations({ solver, domain, selected, stage, palette }: 
       {symmetry.map(({ axis, mode, side }) => (
         <SymmetryPlane key={axis} face={faces[axis * 2 + (side === 'high' ? 1 : 0)]} mode={mode} palette={palette} />
       ))}
-      {selected && uniform && <Label position={top} color={palette.boundary}>{`Boundary · ${kindText(kinds[0])}`}</Label>}
+      {selected && uniform && <Label position={top} row={1} color={palette.boundary}>{`Boundary · ${kindText(kinds[0])}`}</Label>}
       {selected &&
         !uniform &&
         faces.map((face, i) => {
@@ -245,7 +244,7 @@ export function SolverAnnotations({ solver, domain, selected, stage, palette }: 
             </Label>
           );
         })}
-      {selected && <GridTicks domain={domain} solver={solver} palette={palette} />}
+      {selected && <GridTicks domain={domain} solver={solver} palette={palette} labelAt={top} />}
     </SceneFrame>
   );
 }
