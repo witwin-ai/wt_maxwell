@@ -27,6 +27,6 @@ def test_prepare_script_reports_ready(capsys):
 
 
 def test_scene_opens_on_the_bench_stage():
-    # A 1.2 m FDTD domain is device scale; World would show it as a speck.
+    # A 1.6 m FDTD domain is device scale; World would show it as a speck.
     header = (PROJECT / "scenes" / "main.wtscene").read_text(encoding="utf-8").split("[[entity]]", 1)[0]
     assert 'stage = "bench"' in header
