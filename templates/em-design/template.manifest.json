@@ -4,8 +4,8 @@
   "templateVersion": "1.0.0",
   "projectFormatVersion": "1.0",
   "minProtocol": 1,
-  "totalBytes": 9000,
-  "treeSha256": "79db52cc47283bdfb7f1f490d0724f83cb5d241c6670a5dc407a0eb6ece70485",
+  "totalBytes": 9280,
+  "treeSha256": "a040744fb6c614a2f34182e470741b83918c9db9228e84b15f843fe3bbadaf55",
   "recommendedPlugins": [
     "witwin.maxwell"
   ],
@@ -27,8 +27,8 @@
     },
     {
       "path": "scenes/main.wtscene",
-      "bytes": 2487,
-      "sha256": "60092e703164c1d086d07dee47be59c23f5c88012c9ab9a56350d31a9c93bc23"
+      "bytes": 2503,
+      "sha256": "2177d24db599b4df095a72fe4e20b23f455a1b0d08643bb93aed5c88da91f634"
     },
     {
       "path": "scripts/prepare_em.py",
@@ -37,8 +37,8 @@
     },
     {
       "path": "tests/test_scene.py",
-      "bytes": 846,
-      "sha256": "3d4b63892596db24f77c654f69912ed309e53475a3eeca9d5dd662f1146e417f"
+      "bytes": 1110,
+      "sha256": "feff6cdc0a09266c9c6f7ff78840602e9d6d91d757faa7c4fa5897be4f61bc92"
     },
     {
       "path": "witwin.toml",
