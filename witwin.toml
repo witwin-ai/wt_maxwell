@@ -18,7 +18,7 @@ pluginDependencies = [
 ]
 
 [engines]
-witwin = "^1.0.0"
+witwin = "^2.0.0"
 
 [web]
 root = "web"
