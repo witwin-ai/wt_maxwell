@@ -28,8 +28,8 @@ from witwin_server.api import (
     string_field,
     tab_group,
     vector3_field,
-    FieldComponent,
 )
+from witwin_server.plugins_builtin.em.api import FieldComponent
 
 from ..adapter.common import num
 from ..adapter.grid import PPW_OPTIONS, grid_cell_size, grid_frequency, pml_inset, resolution_from_bounds

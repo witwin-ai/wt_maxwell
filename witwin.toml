@@ -10,6 +10,8 @@ icon = "waves"
 enabled = true
 # test_m4_solve shows a field with the Volume Plugin's VolumeRenderer when it is installed.
 pluginDependencies = [
+  # The EM fields of Material and the Field component (studio.em, 2026-11-03).
+  { id = "studio.em" },
   { id = "witwin.volume", optional = true },
   # The web half only adds visualizers and a gizmo to the viewport.
   { id = "studio.viewport", optional = true },
