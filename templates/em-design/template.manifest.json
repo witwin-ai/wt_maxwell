@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "templateId": "em-design",
-  "templateVersion": "1.1.1",
+  "templateVersion": "1.1.2",
   "projectFormatVersion": "1.0",
   "minProtocol": 1,
   "totalBytes": 10242,
-  "treeSha256": "b866936a7eca6d9419af645986afa26fc94f631672508cb4b8d2b9457fc4c7f8",
+  "treeSha256": "5c423c2242414d1a3f0b0ae43af4b473f97c4057a556fb304273d6ed714a781d",
   "recommendedPlugins": [
     "witwin.maxwell"
   ],
@@ -23,7 +23,7 @@
     {
       "path": "pyproject.toml",
       "bytes": 813,
-      "sha256": "c07588667a29b515ea3cf1c78ad4cde25923219c63392f408e787d3ca8fa28ae"
+      "sha256": "8ee9fd1fa6baef70afd5c4dccf51385bebb1b11ab7f3b4b02c1f88df728bf213"
     },
     {
       "path": "scenes/main.wtscene",
@@ -43,7 +43,7 @@
     {
       "path": "witwin.toml",
       "bytes": 256,
-      "sha256": "033b02e4f699fafcd0eff5c8f15f0835903b66f1c43fba3e88ccb9e3e8a38ef8"
+      "sha256": "16d01260f4509b00efcda0b026b4b39ccb78ab64424fa3c55cd790e1f2a924ff"
     }
   ]
 }
