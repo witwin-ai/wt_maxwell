@@ -1,6 +1,6 @@
 id = "witwin.maxwell"
 name = "Maxwell"
-version = "0.1.1"
+version = "0.1.2"
 author = ""
 description = "FDTD electromagnetic field solver with 2D/3D visualization."
 license = "GPL-3.0-or-later"
